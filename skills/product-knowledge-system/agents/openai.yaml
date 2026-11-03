@@ -1,0 +1,4 @@
+interface:
+  display_name: "Product Knowledge System"
+  short_description: "Bootstrap or safely migrate product knowledge"
+  default_prompt: "Use $product-knowledge-system to initialize or safely migrate this project into PKS."
