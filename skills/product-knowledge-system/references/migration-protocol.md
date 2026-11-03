@@ -22,6 +22,8 @@ Before writes, show a plan with:
 
 The user must approve the plan after all required questions have answers. An approval of one file or a general desire to migrate does not approve an unlisted source mutation, a Git commit, a branch change, or an external action.
 
+Every canonical document, shared workflow, local skill, template, project instruction, and retained source item that contains project knowledge needs an explicit Git disposition. The normal disposition is **track and include in the approved PKS commit**, even when the original remains at its former path. An ignored or untracked knowledge item is an issue to resolve, not evidence that it can be dropped. Credentials, private keys, tokens, local secret files, and purely generated/cache material are exceptions: do not stage them; record only their classification and the user-approved handling.
+
 ## Migration map schema
 
 Store a JSON map with one item per path listed in the before-inventory. The verification tool accepts this shape:
