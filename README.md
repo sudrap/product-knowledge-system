@@ -93,3 +93,7 @@ python3 -m unittest discover -s tests
 ```
 
 When a version changes the `docs/` structure, mark it `[docs-structure]` in `CHANGELOG.md`.
+
+## License
+
+[MIT](LICENSE)
