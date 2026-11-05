@@ -90,26 +90,9 @@ Your own workflows are safe if their names don't start with `pks-`.
 - The rule and skills are instructions for agents, not technical locks. Agents can miss something or ask more than needed. Everything they write stays uncommitted until you decide, so you can review it in Git.
 - Each project has its own copy of the skills and its own version.
 
-## Develop
+## Contribute
 
-Clone the repository and run `./install.sh` in it. This links your checkout, so `pks` uses your edits right away.
-
-```bash
-python3 -m unittest discover -s tests
-```
-
-### Release
-
-The install command gives people the latest tag, so work on `main` reaches nobody until it is released.
-
-1. Set the new number in `VERSION`: the last part for fixes and wording, the middle part for a new skill or behaviour, the first part for a change to the `docs/` structure.
-2. Describe it in `CHANGELOG.md`. Mark a change to the `docs/` structure with `[docs-structure]`, so `pks update` tells people to run `pks-setup`.
-3. Commit, tag and push:
-
-```bash
-git tag v1.2.0
-git push origin main --tags
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
