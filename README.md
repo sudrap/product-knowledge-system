@@ -36,7 +36,12 @@ Then start a new agent session in the project and run the setup:
 - Claude Code: `/pks-setup`
 - Codex: `$pks-setup`
 
-The agent explores the project, shows you a plan for moving existing knowledge, and asks only what it cannot find out itself. In a new project it just asks a few questions. Once you have approved the plan and the knowledge is in place, it turns off Claude's automatic memory for this project, so everything stays in one place.
+The agent leads you through it one question at a time, shows how many there are ("Question 2 of 5") and offers answers, or you can write your own.
+
+- **New project:** at most five questions, only to capture what you want to say now. You can end at any time, and the rest stays `[unknown]`.
+- **Project with history:** the agent explores the project first and asks at most ten questions about what matters most. The rest stays `[unknown]` and gets filled in as you work. Then it takes you through a short review, step by step: what will be written, which decisions it will record, and what happens to existing material. Nothing is written until you agree.
+
+Once the knowledge is in place, the agent turns off Claude's automatic memory for this project, so everything stays in one place.
 
 ## Daily use
 

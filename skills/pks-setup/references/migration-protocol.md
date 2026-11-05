@@ -14,7 +14,7 @@ Read-only locations, such as a design folder, are always `retained` and never ed
 
 ## Required migration plan
 
-Before writes, show a plan with:
+Before writes, prepare a complete plan with:
 
 1. repository root, Git state and applicable instructions;
 2. inventory totals and unreadable/ignored/nested-repository findings;
@@ -26,7 +26,11 @@ Before writes, show a plan with:
 8. validation commands and the conditions for a successful migration;
 9. the exact approval requested, including any source mutation and commit.
 
-The user must approve the plan after all required questions have answers. An approval of one file or a general desire to migrate does not approve an unlisted source mutation, a Git commit, a branch change, or an external action.
+This plan is your working record, not something the user reads. The review in the skill shows them in plain words what they need to decide. Show the complete plan only if asked, and save it with the migration afterwards.
+
+The review must name everything that changes, moves or removes the user's existing material. Filling a file that `pks init` created and that still holds only its starter text needs no such mention.
+
+The user approves at the go-ahead step of the review, after all required questions have answers. That approval covers only what the review showed. It does not cover an unlisted source mutation, a Git commit, a branch change, or an external action.
 
 Every canonical document, local skill, template, project instruction, and retained source item that contains project knowledge needs an explicit Git disposition. The normal disposition is **track and include in the approved PKS commit**, even when the original remains at its former path. An ignored or untracked knowledge item is an issue to resolve, not evidence that it can be dropped. Credentials, private keys, tokens, local secret files, and purely generated/cache material are exceptions: do not stage them; record only their classification and the user-approved handling.
 

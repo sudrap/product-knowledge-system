@@ -2,6 +2,12 @@
 
 Mark a version that changes the `docs/` structure with `[docs-structure]`. `pks update` then tells people to run `pks-setup`.
 
+## 1.3.0
+
+`pks-setup` now leads you through the setup step by step. It asks one question at a time, shows how many there are ("Question 2 of 5"), and offers answers, or you can write your own. An interrupted setup can continue in another conversation.
+
+A new project gets at most five questions, and you can end at any time. A project with history gets at most ten, about what matters most, followed by a short review: what will be written, which decisions get recorded, and what happens to existing material. Nothing is written until you agree. Decisions are settled in the review, so nothing waits for confirmation unless you are unsure about it.
+
 ## 1.2.0
 
 Add `pks uninstall`, which removes the command and the download. Projects stay as they are.
