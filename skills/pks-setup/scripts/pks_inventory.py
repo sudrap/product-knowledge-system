@@ -10,7 +10,7 @@ import os
 import stat
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -101,7 +101,7 @@ def main() -> int:
     entries, errors = inventory(root)
     document = {
         "schemaVersion": "pks-inventory/v1",
-        "generatedAt": datetime.now(UTC).isoformat(),
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
         "project": str(root),
         "excluded": [".git/ (Git object database and history; summarized separately)"],
         "git": git_summary(root),

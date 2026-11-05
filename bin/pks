@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+"""Install and update the Product Knowledge System (PKS) in a project."""
+
+from __future__ import annotations
+
+import argparse
+import re
+import shutil
+import subprocess
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+if sys.version_info < (3, 9):
+    sys.exit("pks needs Python 3.9 or newer.")
+
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+SKILLS_SOURCE = PACKAGE_ROOT / "skills"
+TEMPLATES = PACKAGE_ROOT / "templates"
+
+VERSION_FILE = Path(".pks/version")
+TOOL_SKILL_DIRS = (Path(".claude/skills"), Path(".agents/skills"))
+BRAINSTORMS_IGNORE = ".pks/brainstorms/"
+BLOCK = re.compile(r"<!-- PKS:START -->.*?<!-- PKS:END -->\n?", re.DOTALL)
+SKIPPED_NAMES = {"__pycache__", ".DS_Store"}
+SKIPPED_SUFFIXES = {".pyc"}
+DOCS_STRUCTURE_TAG = "[docs-structure]"
+
+
+class PksError(Exception):
+    """A problem the user has to resolve; printed without a traceback."""
+
+
+@dataclass
+class Plan:
+    create: list[str] = field(default_factory=list)
+    change: list[str] = field(default_factory=list)
+    remove: list[str] = field(default_factory=list)
+    left_untouched: list[str] = field(default_factory=list)
+
+    def is_empty(self) -> bool:
+        return not (self.create or self.change or self.remove)
+
+    def show(self) -> None:
+        for label, marker, paths in (
+            ("Create", "+", self.create),
+            ("Change", "~", self.change),
+            ("Remove", "-", self.remove),
+            ("Already exists, left untouched for pks-setup", "!", self.left_untouched),
+        ):
+            if paths:
+                print(f"{label}:")
+                for path in paths:
+                    print(f"  {marker} {path}")
+
+
+def package_version() -> str:
+    return (PACKAGE_ROOT / "VERSION").read_text(encoding="utf-8").strip()
+
+
+def parse_version(text: str) -> tuple[int, ...]:
+    try:
+        return tuple(int(part) for part in text.strip().split("."))
+    except ValueError as exc:
+        raise PksError(f"Cannot read version {text.strip()!r}.") from exc
+
+
+def project_root(path: str) -> Path:
+    root = Path(path).expanduser().resolve()
+    if not root.is_dir():
+        raise PksError(f"Not a directory: {root}")
+    return root
+
+
+def existing_path(root: Path, relative: Path) -> Path | None:
+    """Find a path ignoring case; default macOS volumes treat such names as one file."""
+    current = root
+    for part in relative.parts:
+        if not current.is_dir():
+            return None
+        wanted = part.casefold()
+        match = next((child for child in current.iterdir() if child.name.casefold() == wanted), None)
+        if match is None:
+            return None
+        current = match
+    return current
+
+
+def package_skills() -> list[Path]:
+    return sorted(path for path in SKILLS_SOURCE.iterdir() if path.is_dir() and path.name.startswith("pks-"))
+
+
+def installed_skills(root: Path) -> list[Path]:
+    found: list[Path] = []
+    for skills_dir in TOOL_SKILL_DIRS:
+        if (root / skills_dir).is_dir():
+            found.extend(sorted(path for path in (root / skills_dir).iterdir() if path.name.startswith("pks-")))
+    return found
+
+
+def skipped(path: Path) -> bool:
+    return bool(SKIPPED_NAMES.intersection(path.parts)) or path.suffix in SKIPPED_SUFFIXES
+
+
+def tree_contents(directory: Path) -> dict[str, bytes]:
+    contents: dict[str, bytes] = {}
+    for path in directory.rglob("*"):
+        relative = path.relative_to(directory)
+        if path.is_file() and not skipped(relative):
+            contents[relative.as_posix()] = path.read_bytes()
+    return contents
+
+
+def copy_skill(source: Path, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, target, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store"))
+
+
+def with_block(text: str, block: str) -> str:
+    if BLOCK.search(text):
+        return BLOCK.sub(lambda _: block, text, count=1)
+    if not text:
+        return block
+    separator = "\n" if text.endswith("\n") else "\n\n"
+    return f"{text}{separator}{block}"
+
+
+def instruction_files(root: Path) -> list[tuple[Path, str]]:
+    """Return each instruction file with its block; a symlinked pair gets the rule once."""
+    agents = existing_path(root, Path("AGENTS.md")) or root / "AGENTS.md"
+    claude = existing_path(root, Path("CLAUDE.md")) or root / "CLAUDE.md"
+    rule = (TEMPLATES / "rule.md").read_text(encoding="utf-8")
+    if agents.exists() and claude.exists() and agents.resolve() == claude.resolve():
+        return [(agents, rule)]
+    return [(agents, rule), (claude, (TEMPLATES / "claude-import.md").read_text(encoding="utf-8"))]
+
+
+def gitignore_needs_entry(root: Path) -> bool:
+    path = root / ".gitignore"
+    return not path.exists() or BRAINSTORMS_IGNORE not in path.read_text(encoding="utf-8").splitlines()
+
+
+def add_gitignore_entry(root: Path) -> None:
+    path = root / ".gitignore"
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    separator = "" if not text or text.endswith("\n") else "\n"
+    path.write_text(f"{text}{separator}{BRAINSTORMS_IGNORE}\n", encoding="utf-8")
+
+
+def is_git_repository(root: Path) -> bool:
+    completed = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return completed.returncode == 0
+
+
+def uncommitted_skill_changes(root: Path) -> list[str]:
+    pathspecs = [f"{skills_dir.as_posix()}/pks-*" for skills_dir in TOOL_SKILL_DIRS]
+    completed = subprocess.run(
+        ["git", "-C", str(root), "status", "--porcelain", "--", *pathspecs],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return completed.stdout.splitlines() if completed.returncode == 0 else []
+
+
+def ignored_by_git(root: Path, paths: list[Path]) -> list[str]:
+    ignored = []
+    for path in paths:
+        completed = subprocess.run(
+            ["git", "-C", str(root), "check-ignore", "--no-index", "-q", path.as_posix()],
+            check=False,
+        )
+        if completed.returncode == 0:
+            ignored.append(path.as_posix())
+    return ignored
+
+
+def warn_about_git(root: Path) -> None:
+    if not is_git_repository(root):
+        print("Note: this is not a Git repository, so PKS files are not versioned yet. Consider `git init`.")
+        return
+    tracked = [VERSION_FILE, Path("docs/PROJECT.md"), Path("AGENTS.md"), Path("CLAUDE.md")]
+    tracked += [skills_dir / skill.name / "SKILL.md" for skills_dir in TOOL_SKILL_DIRS for skill in package_skills()]
+    ignored = ignored_by_git(root, tracked)
+    if ignored:
+        print("Warning: Git ignores these PKS files, so they would not travel with the project:")
+        for path in ignored:
+            print(f"  ! {path}")
+        print("Adjust your ignore rules. PKS does not change them for you.")
+
+
+def confirm(assume_yes: bool) -> None:
+    if assume_yes:
+        return
+    if not sys.stdin.isatty():
+        raise PksError("Nothing changed. Re-run with --yes to apply without a question.")
+    if input("Apply these changes? [y/N] ").strip().casefold() not in {"y", "yes"}:
+        raise PksError("Nothing changed.")
+
+
+def init_plan(root: Path) -> Plan:
+    plan = Plan()
+    for skills_dir in TOOL_SKILL_DIRS:
+        plan.create.extend(f"{(skills_dir / skill.name).as_posix()}/" for skill in package_skills())
+    plan.create.append(VERSION_FILE.as_posix())
+    for template in sorted((TEMPLATES / "docs").glob("*.md")):
+        relative = Path("docs") / template.name
+        existing = existing_path(root, relative)
+        if existing is None:
+            plan.create.append(relative.as_posix())
+        else:
+            plan.left_untouched.append(existing.relative_to(root).as_posix())
+    for path, _ in instruction_files(root):
+        name = path.relative_to(root).as_posix()
+        (plan.change if path.exists() else plan.create).append(name)
+    if gitignore_needs_entry(root):
+        (plan.change if (root / ".gitignore").exists() else plan.create).append(".gitignore")
+    return plan
+
+
+def init_blockers(root: Path) -> list[str]:
+    blockers = []
+    for skills_dir in TOOL_SKILL_DIRS:
+        for skill in package_skills():
+            existing = existing_path(root, skills_dir / skill.name)
+            if existing is not None:
+                blockers.append(existing.relative_to(root).as_posix())
+    docs = existing_path(root, Path("docs"))
+    if docs is not None and not docs.is_dir():
+        blockers.append(f"{docs.relative_to(root).as_posix()} (not a folder)")
+    return blockers
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    root = project_root(args.path)
+    version_path = root / VERSION_FILE
+    if version_path.exists():
+        installed = version_path.read_text(encoding="utf-8").strip()
+        print(f"PKS {installed} is already installed in {root}. Nothing changed. Use `pks update` to update it.")
+        return 0
+    blockers = init_blockers(root)
+    if blockers:
+        listed = "\n".join(f"  ! {path}" for path in blockers)
+        raise PksError(f"Nothing changed. These paths are in the way, and PKS never overwrites:\n{listed}")
+
+    plan = init_plan(root)
+    print(f"PKS {package_version()} into {root}")
+    plan.show()
+    if args.dry_run:
+        print("Dry run: nothing changed.")
+        return 0
+    confirm(args.yes)
+
+    for skills_dir in TOOL_SKILL_DIRS:
+        for skill in package_skills():
+            copy_skill(skill, root / skills_dir / skill.name)
+    for template in sorted((TEMPLATES / "docs").glob("*.md")):
+        relative = Path("docs") / template.name
+        if existing_path(root, relative) is None:
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(template, target)
+    for path, block in instruction_files(root):
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        path.write_text(with_block(text, block), encoding="utf-8")
+    if gitignore_needs_entry(root):
+        add_gitignore_entry(root)
+    version_path.parent.mkdir(parents=True, exist_ok=True)
+    version_path.write_text(f"{package_version()}\n", encoding="utf-8")
+
+    print(f"PKS {package_version()} installed. Nothing was committed.")
+    warn_about_git(root)
+    print("Next: start a new agent session here and run /pks-setup (Claude Code) or $pks-setup (Codex).")
+    return 0
+
+
+def update_plan(root: Path, installed: str, current: str) -> Plan:
+    plan = Plan()
+    wanted = {skills_dir / skill.name: skill for skills_dir in TOOL_SKILL_DIRS for skill in package_skills()}
+    for relative, source in wanted.items():
+        target = root / relative
+        if not target.exists():
+            plan.create.append(f"{relative.as_posix()}/")
+        elif tree_contents(target) != tree_contents(source):
+            plan.change.append(f"{relative.as_posix()}/")
+    for existing in installed_skills(root):
+        if existing.relative_to(root) not in wanted:
+            plan.remove.append(f"{existing.relative_to(root).as_posix()}/")
+    for path, block in instruction_files(root):
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        if with_block(text, block) != text:
+            (plan.change if path.exists() else plan.create).append(path.relative_to(root).as_posix())
+    if gitignore_needs_entry(root):
+        (plan.change if (root / ".gitignore").exists() else plan.create).append(".gitignore")
+    if installed != current:
+        plan.change.append(VERSION_FILE.as_posix())
+    return plan
+
+
+def changes_since(installed: str, current: str) -> str:
+    path = PACKAGE_ROOT / "CHANGELOG.md"
+    if not path.exists():
+        return ""
+    sections = re.split(r"(?m)^(?=## )", path.read_text(encoding="utf-8"))
+    newer = []
+    for section in sections:
+        match = re.match(r"## \[?(\d+(?:\.\d+)*)\]?", section)
+        if match and parse_version(installed) < parse_version(match.group(1)) <= parse_version(current):
+            newer.append(section.strip())
+    return "\n\n".join(newer)
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    root = project_root(args.path)
+    version_path = root / VERSION_FILE
+    if not version_path.exists():
+        raise PksError(f"PKS is not installed in {root}. Use `pks init` first.")
+    installed = version_path.read_text(encoding="utf-8").strip()
+    current = package_version()
+    if parse_version(installed) > parse_version(current) and not args.force:
+        raise PksError(f"This project has PKS {installed}, newer than this package ({current}). Nothing changed.")
+
+    if not is_git_repository(root):
+        print("Note: this is not a Git repository, so local changes to PKS skills cannot be detected.")
+    else:
+        dirty = uncommitted_skill_changes(root)
+        if dirty and not args.force:
+            listed = "\n".join(f"  {line}" for line in dirty)
+            raise PksError(
+                "Nothing changed. These PKS skill files have uncommitted changes:\n"
+                f"{listed}\nCommit or revert them, or re-run with --force to overwrite them."
+            )
+
+    plan = update_plan(root, installed, current)
+    if plan.is_empty():
+        print(f"PKS {current} is up to date in {root}.")
+        return 0
+    print(f"PKS {installed} -> {current} in {root}")
+    plan.show()
+    if args.dry_run:
+        print("Dry run: nothing changed.")
+        return 0
+    confirm(args.yes)
+
+    for existing in installed_skills(root):
+        shutil.rmtree(existing)
+    for skills_dir in TOOL_SKILL_DIRS:
+        for skill in package_skills():
+            copy_skill(skill, root / skills_dir / skill.name)
+    for path, block in instruction_files(root):
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        path.write_text(with_block(text, block), encoding="utf-8")
+    if gitignore_needs_entry(root):
+        add_gitignore_entry(root)
+    version_path.write_text(f"{current}\n", encoding="utf-8")
+
+    print(f"PKS updated to {current}. `docs/` was not touched and nothing was committed.")
+    changes = changes_since(installed, current)
+    if changes:
+        print(f"\nWhat changed:\n\n{changes}\n")
+    if DOCS_STRUCTURE_TAG in changes:
+        print("This version changes the `docs/` structure: run /pks-setup (Claude Code) or $pks-setup (Codex).")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="pks", description=__doc__)
+    parser.add_argument("--version", action="version", version=f"pks {package_version()}")
+    commands = parser.add_subparsers(dest="command", required=True)
+
+    def add_shared(command: argparse.ArgumentParser) -> None:
+        command.add_argument("path", nargs="?", default=".", help="project folder (default: current folder)")
+        command.add_argument("--yes", action="store_true", help="apply without asking")
+        command.add_argument("--dry-run", action="store_true", help="only show what would change")
+
+    init = commands.add_parser("init", help="install PKS into a project; never changes an existing installation")
+    add_shared(init)
+    init.set_defaults(handler=cmd_init)
+
+    update = commands.add_parser("update", help="update PKS in a project; never touches docs/")
+    add_shared(update)
+    update.add_argument("--force", action="store_true", help="overwrite local changes to PKS skills")
+    update.set_defaults(handler=cmd_update)
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
+    try:
+        return args.handler(args)
+    except PksError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

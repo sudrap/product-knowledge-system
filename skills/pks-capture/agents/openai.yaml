@@ -1,0 +1,4 @@
+interface:
+  display_name: "PKS Capture"
+  short_description: "Record project knowledge in docs/"
+  default_prompt: "Use $pks-capture to record what is worth keeping from this conversation."

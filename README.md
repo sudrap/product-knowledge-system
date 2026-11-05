@@ -1,0 +1,95 @@
+# Product Knowledge System (PKS)
+
+Keep a project's know-how in the project: ideas, brainstorms, decisions, the plan and why things are the way they are. Claude Code and Codex read and maintain the same plain Markdown in `docs/`, you can browse it yourself, and it travels with Git.
+
+PKS is not a ticketing system and depends on none. If you use one, it keeps tracking tasks and progress; if you don't, the roadmap in `docs/` is enough.
+
+## Install
+
+You need Git and Python 3.9 or newer.
+
+```bash
+git clone git@github.com:sudrap/product-knowledge-system.git
+cd product-knowledge-system
+./install.sh
+```
+
+This links the `pks` command into `~/.local/bin`. To use another folder, set `PKS_BIN_DIR`.
+
+## Add it to a project
+
+In the project's folder:
+
+```bash
+pks init
+```
+
+It shows what it will create and asks first. It never overwrites anything and commits nothing. It adds:
+
+- the `pks-*` skills in `.claude/skills/` and `.agents/skills/`,
+- a short marked rule in `AGENTS.md`, imported from `CLAUDE.md`,
+- starter files in `docs/`,
+- `.pks/version` and a `.gitignore` entry for `.pks/brainstorms/`.
+
+Then start a new agent session in the project and run the setup:
+
+- Claude Code: `/pks-setup`
+- Codex: `$pks-setup`
+
+The agent explores the project, shows you a plan for moving existing knowledge, and asks only what it cannot find out itself. In a new project it just asks a few questions. Once you have approved the plan and the knowledge is in place, it turns off Claude's automatic memory for this project, so everything stays in one place.
+
+## Daily use
+
+Just work. Ask for `/pks-help` or `$pks-help` any time.
+
+- **"Write this down"** records something in `docs/` and shows you where.
+- **On its own**, the agent checks `docs/` before related work. At the end of a topic it asks once whether to record anything important. It does not write without you.
+- **During a brainstorm** it keeps notes in `.pks/brainstorms/`, so you can continue in another conversation.
+- **"Run an audit"** and **"go through the inbox"** run `pks-audit`, only when you ask.
+
+## What ends up in `docs/`
+
+```text
+docs/
+├── PROJECT.md        # purpose, current state, unknowns, language, other locations
+├── product.md        # vision, users, value, strategy
+├── business.md       # monetization, pricing, competitors, metrics
+├── architecture.md   # structure and tech stack
+├── roadmap.md        # Now / Next / Later
+├── development.md    # build, run, debug, solved problems (when needed)
+├── discovery/        # ideas, brainstorms, research under consideration
+│   ├── inbox/        # new and unprocessed
+│   └── rejected/     # rejected, with the reason
+├── decisions/        # valid decisions
+│   ├── proposed/     # waiting for confirmation
+│   └── superseded/   # replaced by a newer decision
+└── features/         # feature specifications
+```
+
+Status is the folder, so a folder listing shows it. Folders appear when first needed.
+
+## Update
+
+Get the new version, then update each project when you want to:
+
+```bash
+git -C <path-to-product-knowledge-system> pull
+pks update
+```
+
+`pks update` replaces the `pks-*` skills and PKS's marked blocks in `AGENTS.md` and `CLAUDE.md`, and records the new version. It never touches `docs/` and commits nothing. It stops if the skills have uncommitted changes.
+
+Your own workflows are safe if their names don't start with `pks-`.
+
+## Limits
+
+- The rule and skills are instructions for agents, not technical locks. Agents can miss something or ask more than needed. Everything they write stays uncommitted until you decide, so you can review it in Git.
+- Each project has its own copy of the skills and its own version.
+
+## Develop
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+When a version changes the `docs/` structure, mark it `[docs-structure]` in `CHANGELOG.md`.

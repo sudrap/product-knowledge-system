@@ -1,0 +1,4 @@
+interface:
+  display_name: "PKS Setup"
+  short_description: "Fill the project's knowledge base after pks init"
+  default_prompt: "Use $pks-setup to explore this project and fill its Product Knowledge System."

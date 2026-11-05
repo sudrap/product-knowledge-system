@@ -1,0 +1,4 @@
+interface:
+  display_name: "PKS Audit"
+  short_description: "Review project knowledge or the idea inbox"
+  default_prompt: "Use $pks-audit to review this project's knowledge."

@@ -4,7 +4,13 @@
 
 Treat project knowledge broadly: root instructions, documentation, notes, planning artifacts, local skills, templates, issue exports, design records, research, scripts that encode operating knowledge, and relevant Git state. Inventory all working-tree paths—not just tracked files—without following symlinks. The inventory tool deliberately excludes `.git` object internals and summarizes repository status instead.
 
+Claude's memory for the project and any tracker or wiki the user names are sources too, but they sit outside the inventory. List them separately in the plan, each with a destination.
+
+Generate the migration map with a script rather than by hand. Most paths in a project with code are `retained`, including the files `pks init` created.
+
 Do not copy credentials, access tokens, private keys, or `.env` content into canonical Markdown or migration reports. Flag potentially secret-bearing material and ask whether it should remain local, be documented only by name, or be moved through an approved secret-management path.
+
+Read-only locations, such as a design folder, are always `retained` and never edited. Verification then proves they did not change.
 
 ## Required migration plan
 
@@ -22,7 +28,7 @@ Before writes, show a plan with:
 
 The user must approve the plan after all required questions have answers. An approval of one file or a general desire to migrate does not approve an unlisted source mutation, a Git commit, a branch change, or an external action.
 
-Every canonical document, shared workflow, local skill, template, project instruction, and retained source item that contains project knowledge needs an explicit Git disposition. The normal disposition is **track and include in the approved PKS commit**, even when the original remains at its former path. An ignored or untracked knowledge item is an issue to resolve, not evidence that it can be dropped. Credentials, private keys, tokens, local secret files, and purely generated/cache material are exceptions: do not stage them; record only their classification and the user-approved handling.
+Every canonical document, local skill, template, project instruction, and retained source item that contains project knowledge needs an explicit Git disposition. The normal disposition is **track and include in the approved PKS commit**, even when the original remains at its former path. An ignored or untracked knowledge item is an issue to resolve, not evidence that it can be dropped. Credentials, private keys, tokens, local secret files, and purely generated/cache material are exceptions: do not stage them; record only their classification and the user-approved handling.
 
 ## Migration map schema
 
@@ -36,7 +42,7 @@ Store a JSON map with one item per path listed in the before-inventory. The veri
     {
       "source": "notes/old-roadmap.md",
       "disposition": "referenced",
-      "destinations": ["docs/planning/roadmap.md"],
+      "destinations": ["docs/roadmap.md"],
       "approvalRef": "migration plan approved YYYY-MM-DD",
       "notes": "Original retained; canonical document links to it."
     }
@@ -48,7 +54,7 @@ Allowed dispositions are:
 
 - `retained`: original stays unchanged; it is intentionally not duplicated.
 - `copied`: original stays unchanged and each destination is an exact byte-for-byte copy.
-- `referenced`: original stays unchanged; destination is a canonical index or document that points to it.
+- `referenced`: original stays unchanged; destination is a document that points to it.
 - `merged`: original stays unchanged; destination consolidates it with other approved sources.
 - `changed-with-approval`: use only for a specifically approved source overwrite or move. `approvalRef` is mandatory.
 
@@ -61,10 +67,10 @@ Create only missing scaffolding unless an approved plan names a modification. Pr
 After writes, retain the before inventory and run:
 
 ```text
-python3 <skill>/scripts/verify_pks_migration.py \
+python3 <this-skill>/scripts/verify_pks_migration.py \
   --project <project-root> \
-  --before <migration-dir>/inventory-before.json \
-  --mapping <migration-dir>/migration-map.json \
+  --before <temp>/inventory-before.json \
+  --mapping <temp>/migration-map.json \
   --strict
 ```
 

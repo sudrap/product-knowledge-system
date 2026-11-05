@@ -1,0 +1,4 @@
+interface:
+  display_name: "PKS Help"
+  short_description: "How to use the Product Knowledge System"
+  default_prompt: "Use $pks-help to explain how PKS works in this project."
