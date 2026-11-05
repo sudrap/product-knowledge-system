@@ -1,0 +1,4 @@
+interface:
+  display_name: "PKS Brainstorm"
+  short_description: "Think a topic through, one question at a time"
+  default_prompt: "Use $pks-brainstorm to brainstorm this topic with me."

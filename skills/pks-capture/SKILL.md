@@ -1,6 +1,6 @@
 ---
 name: pks-capture
-description: Record project knowledge in docs/. Use when the user asks to write down or remember something ("zapiš to", "zapamatuj si", "write this down"), during and after a brainstorm, at the end of a topic where something important came up, or when asked what is worth recording.
+description: Record project knowledge in docs/. Use when the user asks to write down or remember something ("zapiš to", "zapamatuj si", "write this down"), at the end of a topic where something important came up, or when asked what is worth recording.
 ---
 
 # PKS capture
@@ -53,7 +53,7 @@ Record them? yes / no / add something
 | What a feature should do | `docs/features/` |
 | A rule for all the user's projects | `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, only when the user says so |
 
-Tasks, assignees and task status belong in the user's tracker. A decision or new knowledge from grooming or development still belongs in `docs/`, and a ticket links to it.
+Tasks, assignees and task status belong in the user's tracker. A decision or new knowledge from grooming or development still belongs in `docs/`, and a ticket links to it. When asked to prepare stories, propose them from `docs/features/` and the related decisions, for the user's tracker rather than for `docs/`.
 
 Never change locations marked read-only in `docs/PROJECT.md`. Never write secrets.
 
@@ -79,9 +79,11 @@ One sentence that says what this is.
 Details.
 ```
 
-`type` is `idea`, `brainstorm`, `research` or `hypothesis` in discovery, and `product`, `business` or `technical` in decisions.
+`type` is `idea`, `brainstorm`, `research` or `hypothesis` in discovery, `product`, `business` or `technical` in decisions, and `feature` in features.
 
 Decision records use these sections after the summary: context and problem, considered options, outcome.
+
+Feature records use these sections after the summary: what it should do, rules, out of scope, open questions. Link the related decisions.
 
 ## Status is the folder
 
@@ -94,11 +96,9 @@ Move a record when its status changes, and fix links to it in the same step.
 
 ## Brainstorms
 
-During a product, business or architecture brainstorm, keep notes without asking in `.pks/brainstorms/YYYY-MM-DD-topic.md`. Git ignores this folder and it is outside `docs/`, so it adds nothing to the documentation. Update the notes after each important point.
+When the user asks to brainstorm, follow `pks-brainstorm`.
 
-- **Resuming:** when the user wants to continue a brainstorm, read its notes and carry on. Claude Code and Codex share this path.
-- **Ending:** list what came out in the question above. Afterwards delete the notes, whatever the answer.
-- **Interrupted:** the notes simply stay. Never move them to `docs/` on your own.
+If a longer product, business or architecture discussion is going nowhere conclusive and the user has not asked for a brainstorm, offer once in this conversation to turn it into one, then carry on according to the answer. Do not start one on your own.
 
 ## Git
 

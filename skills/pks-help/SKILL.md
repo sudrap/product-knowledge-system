@@ -13,20 +13,23 @@ Show this briefly, in the user's language, and adapt the invocation to the tool:
 
 - Before work touching product, business or architecture, and on questions, the agent checks `docs/` and tells you when something applies or conflicts.
 - At the end of a topic the agent asks once whether to record anything important: yes / no / add something.
-- During a brainstorm the agent keeps notes in `.pks/brainstorms/`, so you can continue later in another conversation.
+- When a longer product discussion has no conclusion, the agent offers once to turn it into a brainstorm.
 
 **Just say it**
 
 | Say | What happens |
 | --- | --- |
 | "Write this down", "zapiš to" | Recorded in `docs/`; the agent shows where (`pks-capture`) |
+| "Let's brainstorm", "pojďme brainstormovat" | The agent asks one question at a time and keeps notes in `.pks/brainstorms/`, so you can continue in another conversation (`pks-brainstorm`) |
+| "Put it on the roadmap", "dej to do roadmapy" | Recorded in `docs/roadmap.md` (`pks-capture`) |
+| "Prepare stories from features/x" | Stories proposed from the specification and decisions, for your tracker |
 | "What are we planning?" | Answered from `docs/roadmap.md` |
 | "What did we decide about X?" | Answered from `docs/decisions/` |
 | "Go through the inbox", "projdi inbox" | Proposals for each new idea (`pks-audit`) |
 | "Run an audit", "udělej audit" | Report on what is outdated or ready to plan (`pks-audit`) |
 | "Update my tracker from the roadmap" | The agent uses whatever tracker access it has |
 
-**Skills:** `pks-setup` (initial fill), `pks-capture`, `pks-audit`, `pks-help`.
+**Skills:** `pks-setup` (initial fill), `pks-capture`, `pks-brainstorm`, `pks-audit`, `pks-help`.
 
 **Terminal commands:** `pks init` installs PKS into a project. `pks update` updates it and never touches `docs/`. Both only change files; committing is up to you.
 

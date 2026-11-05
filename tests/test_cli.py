@@ -12,7 +12,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PKS = REPO_ROOT / "bin" / "pks"
 VERSION = (REPO_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-SKILLS = ["pks-audit", "pks-capture", "pks-help", "pks-setup"]
+SKILLS = ["pks-audit", "pks-brainstorm", "pks-capture", "pks-help", "pks-setup"]
 
 
 def run_git(root: Path, *args: str) -> None:
@@ -231,13 +231,20 @@ class InstallScriptTest(unittest.TestCase):
         self.temp = Path(tempdir.name)
         self.bin_dir = self.temp / "bin"
         self.pks_home = self.temp / "share" / "pks"
+        self.source = self.temp / "source"
+        subprocess.run(["git", "clone", "-q", str(REPO_ROOT), str(self.source)], check=True, capture_output=True)
+        # The clone has only committed files; give it this working tree so tests see uncommitted changes.
+        for name in ("bin/pks", "VERSION"):
+            (self.source / name).write_bytes((REPO_ROOT / name).read_bytes())
         self.env = {
             "PATH": "/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin",
             "HOME": str(self.temp),
             "PKS_BIN_DIR": str(self.bin_dir),
             "PKS_HOME": str(self.pks_home),
-            "PKS_REPO_URL": REPO_ROOT.as_uri(),
+            "PKS_REPO_URL": self.source.as_uri(),
         }
+        run_git(self.source, "add", "-A")
+        run_git(self.source, "commit", "--allow-empty", "-m", "Current state")
 
     def run_piped(self) -> subprocess.CompletedProcess[str]:
         """Run the script the way `curl ... | sh` does: from stdin, in an unrelated folder."""
@@ -250,6 +257,11 @@ class InstallScriptTest(unittest.TestCase):
             capture_output=True,
             check=False,
         )
+
+    def commit_to_source(self, name: str) -> None:
+        (self.source / name).write_text("x\n", encoding="utf-8")
+        run_git(self.source, "add", "-A")
+        run_git(self.source, "commit", "-m", f"Add {name}")
 
     def test_checkout_links_itself(self) -> None:
         for _ in range(2):
@@ -264,14 +276,34 @@ class InstallScriptTest(unittest.TestCase):
         self.assertEqual((self.bin_dir / "pks").resolve(), PKS.resolve())
         self.assertFalse(self.pks_home.exists())
 
-    def test_piped_script_downloads_and_can_run_again(self) -> None:
-        for _ in range(2):
-            result = self.run_piped()
-            self.assertEqual(result.returncode, 0, result.stderr)
+    def test_installs_latest_release_and_ignores_unreleased_commits(self) -> None:
+        run_git(self.source, "tag", "v1.9.0")
+        self.commit_to_source("after-1-9.txt")
+        run_git(self.source, "tag", "v1.10.0")
+        self.commit_to_source("unreleased.txt")
+
+        result = self.run_piped()
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual((self.bin_dir / "pks").resolve(), (self.pks_home / "bin" / "pks").resolve())
+        self.assertTrue((self.pks_home / "after-1-9.txt").exists(), "1.10 sorts after 1.9")
+        self.assertFalse((self.pks_home / "unreleased.txt").exists())
         version = subprocess.run([str(self.bin_dir / "pks"), "--version"], text=True, capture_output=True, env=self.env)
         self.assertEqual(version.returncode, 0, version.stderr)
-        self.assertIn("pks ", version.stdout)
+
+    def test_running_again_moves_to_a_new_release(self) -> None:
+        run_git(self.source, "tag", "v1.0.0")
+        self.assertEqual(self.run_piped().returncode, 0)
+        self.assertFalse((self.pks_home / "new.txt").exists())
+        self.commit_to_source("new.txt")
+        run_git(self.source, "tag", "v1.1.0")
+        result = self.run_piped()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.pks_home / "new.txt").exists())
+
+    def test_repository_without_a_release_is_refused(self) -> None:
+        result = self.run_piped()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("No PKS release", result.stderr)
 
     def test_foreign_install_folder_is_refused(self) -> None:
         self.pks_home.mkdir(parents=True)
@@ -288,6 +320,16 @@ class InstallScriptTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("not a link", result.stderr)
         self.assertFalse(self.pks_home.exists())
+
+
+class ReleaseTest(unittest.TestCase):
+    def test_changelog_describes_the_current_version(self) -> None:
+        self.assertIn(f"## {VERSION}\n", (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))
+
+    def test_every_skill_is_named_after_its_folder(self) -> None:
+        for skill in SKILLS:
+            text = (REPO_ROOT / "skills" / skill / "SKILL.md").read_text(encoding="utf-8")
+            self.assertIn(f"name: {skill}\n", text)
 
 
 if __name__ == "__main__":

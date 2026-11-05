@@ -84,6 +84,6 @@ One sentence that says what this is.
 Details.
 ```
 
-`type` is `idea`, `brainstorm`, `research` or `hypothesis` in discovery, and `product`, `business` or `technical` in decisions. Decision records use these sections after the summary: context and problem, considered options, outcome.
+`type` is `idea`, `brainstorm`, `research` or `hypothesis` in discovery, `product`, `business` or `technical` in decisions, and `feature` in features. Decision records use these sections after the summary: context and problem, considered options, outcome. Feature records use these: what it should do, rules, out of scope, open questions.
 
 Mark what nobody knows yet as `[unknown]`. Do not invent it. An idea, hypothesis, plan or AI inference is not an approved decision.

@@ -15,7 +15,9 @@ Know-how lives in `docs/`. Read only what the task needs, never all of it:
 
 Some of these appear only once they hold content. List a folder and open records by name. On questions and before work touching product, business or architecture, check the relevant part and say when something applies or conflicts.
 
-When told to write or remember something, write it to `docs/`, never to tool memory, and show where. Otherwise do not interrupt and do not write on your own: at the end of a topic or block of work, ask once about anything important. During a brainstorm, keep notes in `.pks/brainstorms/`. Follow the `pks-capture` skill.
+When told to write or remember something, write it to `docs/`, never to tool memory, and show where. Otherwise do not interrupt and do not write on your own: at the end of a topic or block of work, ask once about anything important. Follow the `pks-capture` skill.
+
+When asked to brainstorm, follow the `pks-brainstorm` skill. Do not start one on your own: if a longer product, business or architecture discussion has no conclusion, offer it once.
 
 Write records in the language stated in `docs/PROJECT.md`. Never change locations listed as read-only there.
 <!-- PKS:END -->

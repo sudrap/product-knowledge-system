@@ -1,5 +1,5 @@
 #!/bin/sh
-# Install the pks command. Running it again updates PKS.
+# Install the latest PKS release. Running it again updates PKS.
 #
 #   curl -fsSL https://raw.githubusercontent.com/sudrap/product-knowledge-system/main/install.sh | sh
 #
@@ -17,14 +17,19 @@ download() {
     origin=$(git -C "$pks_home" remote get-url origin 2>/dev/null || true)
     [ "$origin" = "$repo_url" ] || fail "$pks_home is a different repository. Remove it or set PKS_HOME."
     echo "Updating PKS in $pks_home"
-    git -C "$pks_home" pull --ff-only --quiet || fail "Could not update $pks_home. Remove it and run this again."
+    git -C "$pks_home" fetch --quiet --tags origin || fail "Could not update $pks_home. Check your connection."
   elif [ -e "$pks_home" ]; then
     fail "$pks_home already exists and is not a PKS checkout. Remove it or set PKS_HOME."
   else
     echo "Downloading PKS to $pks_home"
     mkdir -p "$(dirname -- "$pks_home")"
-    git clone --quiet --depth 1 "$repo_url" "$pks_home"
+    git clone --quiet "$repo_url" "$pks_home"
   fi
+
+  latest=$(git -C "$pks_home" tag --list 'v[0-9]*' --sort=-v:refname | head -n 1)
+  [ -n "$latest" ] || fail "No PKS release found in $repo_url."
+  git -C "$pks_home" -c advice.detachedHead=false checkout --quiet "$latest" ||
+    fail "Could not switch $pks_home to $latest. Remove it and run this again."
 }
 
 main() {

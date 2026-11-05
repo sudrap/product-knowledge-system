@@ -12,7 +12,7 @@ You need Git and Python 3.9 or newer.
 curl -fsSL https://raw.githubusercontent.com/sudrap/product-knowledge-system/main/install.sh | sh
 ```
 
-This downloads PKS to `~/.local/share/pks` and links the `pks` command into `~/.local/bin`. You can [read the script](install.sh) first. To use other folders, set `PKS_HOME` and `PKS_BIN_DIR`.
+This downloads the latest release to `~/.local/share/pks` and links the `pks` command into `~/.local/bin`. You can [read the script](install.sh) first. To use other folders, set `PKS_HOME` and `PKS_BIN_DIR`.
 
 To uninstall, delete `~/.local/bin/pks` and `~/.local/share/pks`. Projects keep their own files.
 
@@ -44,7 +44,7 @@ Just work. Ask for `/pks-help` or `$pks-help` any time.
 
 - **"Write this down"** records something in `docs/` and shows you where.
 - **On its own**, the agent checks `docs/` before related work. At the end of a topic it asks once whether to record anything important. It does not write without you.
-- **During a brainstorm** it keeps notes in `.pks/brainstorms/`, so you can continue in another conversation.
+- **"Let's brainstorm"** starts `pks-brainstorm`: one question at a time, with notes in `.pks/brainstorms/`, so you can continue in another conversation. At the end you decide what goes to `docs/`, and the notes are deleted.
 - **"Run an audit"** and **"go through the inbox"** run `pks-audit`, only when you ask.
 
 ## What ends up in `docs/`
@@ -93,7 +93,18 @@ Clone the repository and run `./install.sh` in it. This links your checkout, so 
 python3 -m unittest discover -s tests
 ```
 
-When a version changes the `docs/` structure, mark it `[docs-structure]` in `CHANGELOG.md`.
+### Release
+
+The install command gives people the latest tag, so work on `main` reaches nobody until it is released.
+
+1. Set the new number in `VERSION`: the last part for fixes and wording, the middle part for a new skill or behaviour, the first part for a change to the `docs/` structure.
+2. Describe it in `CHANGELOG.md`. Mark a change to the `docs/` structure with `[docs-structure]`, so `pks update` tells people to run `pks-setup`.
+3. Commit, tag and push:
+
+```bash
+git tag v1.2.0
+git push origin main --tags
+```
 
 ## License
 
