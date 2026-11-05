@@ -31,6 +31,6 @@ Show this briefly, in the user's language, and adapt the invocation to the tool:
 
 **Skills:** `pks-setup` (initial fill), `pks-capture`, `pks-brainstorm`, `pks-audit`, `pks-help`.
 
-**Terminal commands:** `pks init` installs PKS into a project. `pks update` updates it and never touches `docs/`. Both only change files; committing is up to you.
+**Terminal commands:** `pks init` installs PKS into a project. `pks update` updates it and never touches `docs/`. Both only change files; committing is up to you. `pks uninstall` removes the command from this computer; projects stay as they are.
 
 **Where things are:** `PROJECT.md`, `product.md`, `business.md`, `architecture.md`, `roadmap.md` and, once needed, `development.md`, plus `discovery/`, `decisions/` and `features/`. In `discovery/` and `decisions/`, what is current sits directly in the folder; subfolders hold what is waiting or finished.

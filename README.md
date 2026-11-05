@@ -14,7 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/sudrap/product-knowledge-system/mai
 
 This downloads the latest release to `~/.local/share/pks` and links the `pks` command into `~/.local/bin`. You can [read the script](install.sh) first. To use other folders, set `PKS_HOME` and `PKS_BIN_DIR`.
 
-To uninstall, delete `~/.local/bin/pks` and `~/.local/share/pks`. Projects keep their own files.
+To uninstall, run `pks uninstall`. It removes the command and the download. Projects keep their own files and keep working.
 
 ## Add it to a project
 

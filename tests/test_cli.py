@@ -232,7 +232,7 @@ class InstallScriptTest(unittest.TestCase):
         self.bin_dir = self.temp / "bin"
         self.pks_home = self.temp / "share" / "pks"
         self.source = self.temp / "source"
-        subprocess.run(["git", "clone", "-q", str(REPO_ROOT), str(self.source)], check=True, capture_output=True)
+        subprocess.run(["git", "clone", "-q", "--no-tags", str(REPO_ROOT), str(self.source)], check=True, capture_output=True)
         # The clone has only committed files; give it this working tree so tests see uncommitted changes.
         for name in ("bin/pks", "VERSION"):
             (self.source / name).write_bytes((REPO_ROOT / name).read_bytes())
@@ -320,6 +320,55 @@ class InstallScriptTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertIn("not a link", result.stderr)
         self.assertFalse(self.pks_home.exists())
+
+
+    def test_uninstall_removes_the_download_and_leaves_projects(self) -> None:
+        run_git(self.source, "tag", "v1.0.0")
+        self.assertEqual(self.run_piped().returncode, 0)
+        command = str(self.bin_dir / "pks")
+        project = self.temp / "project"
+        project.mkdir()
+        init = subprocess.run([command, "init", "--yes"], cwd=project, env=self.env, text=True, capture_output=True)
+        self.assertEqual(init.returncode, 0, init.stderr)
+        before = sorted(path.relative_to(project).as_posix() for path in project.rglob("*"))
+
+        dry_run = subprocess.run([command, "uninstall", "--dry-run"], env=self.env, text=True, capture_output=True)
+        self.assertEqual(dry_run.returncode, 0, dry_run.stderr)
+        self.assertTrue((self.bin_dir / "pks").is_symlink())
+        self.assertTrue(self.pks_home.exists())
+
+        no_answer = subprocess.run(
+            [command, "uninstall"], env=self.env, text=True, capture_output=True, stdin=subprocess.DEVNULL
+        )
+        self.assertEqual(no_answer.returncode, 1)
+        self.assertTrue(self.pks_home.exists())
+
+        result = subprocess.run([command, "uninstall", "--yes"], env=self.env, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.bin_dir / "pks").exists())
+        self.assertFalse((self.bin_dir / "pks").is_symlink())
+        self.assertFalse(self.pks_home.exists())
+        self.assertEqual(sorted(path.relative_to(project).as_posix() for path in project.rglob("*")), before)
+
+    def test_uninstall_from_a_checkout_keeps_the_checkout(self) -> None:
+        installed = subprocess.run(["sh", str(REPO_ROOT / "install.sh")], env=self.env, text=True, capture_output=True)
+        self.assertEqual(installed.returncode, 0, installed.stderr)
+        result = subprocess.run([str(self.bin_dir / "pks"), "uninstall", "--yes"], env=self.env, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.bin_dir / "pks").is_symlink())
+        self.assertTrue(PKS.is_file())
+        self.assertIn("stays", result.stdout)
+
+    def test_uninstall_leaves_things_that_are_not_pks(self) -> None:
+        self.bin_dir.mkdir()
+        (self.bin_dir / "pks").write_text("mine\n", encoding="utf-8")
+        self.pks_home.mkdir(parents=True)
+        (self.pks_home / "mine.txt").write_text("keep\n", encoding="utf-8")
+        result = subprocess.run([sys.executable, str(PKS), "uninstall", "--yes"], env=self.env, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Nothing changed", result.stdout)
+        self.assertEqual((self.bin_dir / "pks").read_text(encoding="utf-8"), "mine\n")
+        self.assertEqual((self.pks_home / "mine.txt").read_text(encoding="utf-8"), "keep\n")
 
 
 class ReleaseTest(unittest.TestCase):
