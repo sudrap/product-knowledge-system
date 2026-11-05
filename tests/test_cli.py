@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import os
+import pty
 import subprocess
 import sys
 import tempfile
@@ -88,6 +90,19 @@ class InitTest(PksTestCase):
         result = self.pks("init")
         self.assertEqual(result.returncode, 1)
         self.assertIn("--yes", result.stderr)
+        self.assertEqual(self.snapshot(), {})
+
+    def test_ctrl_d_at_the_question_changes_nothing(self) -> None:
+        master, slave = pty.openpty()
+        self.addCleanup(os.close, master)
+        self.addCleanup(os.close, slave)
+        os.write(master, b"\x04")
+        result = subprocess.run(
+            [sys.executable, str(PKS), "init"], cwd=self.root, text=True, capture_output=True, stdin=slave, timeout=30
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Nothing changed", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
         self.assertEqual(self.snapshot(), {})
 
     def test_existing_instruction_files_are_preserved(self) -> None:
@@ -321,6 +336,95 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("not a link", result.stderr)
         self.assertFalse(self.pks_home.exists())
 
+
+    def installed_pks(self, project: Path, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [str(self.bin_dir / "pks"), *args],
+            cwd=project,
+            env=self.env,
+            text=True,
+            capture_output=True,
+            stdin=subprocess.DEVNULL,
+            timeout=120,
+        )
+
+    def install_with_project(self) -> Path:
+        run_git(self.source, "tag", f"v{VERSION}")
+        self.assertEqual(self.run_piped().returncode, 0)
+        project = self.temp / "project"
+        project.mkdir()
+        init = self.installed_pks(project, "init", "--yes")
+        self.assertEqual(init.returncode, 0, init.stderr)
+        return project
+
+    def release_in_source(self) -> None:
+        (self.source / "VERSION").write_text("9.9.9\n", encoding="utf-8")
+        skill = self.source / "skills" / "pks-help" / "SKILL.md"
+        skill.write_text(skill.read_text(encoding="utf-8") + "\nNew in this release.\n", encoding="utf-8")
+        self.commit_to_source("new-release.txt")
+        run_git(self.source, "tag", "v9.9.9")
+
+    def test_update_downloads_the_latest_release_first(self) -> None:
+        project = self.install_with_project()
+        (project / "docs" / "product.md").write_text("mine\n", encoding="utf-8")
+        self.release_in_source()
+
+        result = self.installed_pks(project, "update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Downloaded PKS 9.9.9.", result.stdout)
+        self.assertEqual((self.pks_home / "VERSION").read_text(encoding="utf-8").strip(), "9.9.9")
+        self.assertEqual((project / ".pks" / "version").read_text(encoding="utf-8").strip(), "9.9.9")
+        self.assertIn("New in this release", (project / ".claude/skills/pks-help/SKILL.md").read_text(encoding="utf-8"))
+        self.assertEqual((project / "docs" / "product.md").read_text(encoding="utf-8"), "mine\n")
+
+        again = self.installed_pks(project, "update", "--yes")
+        self.assertEqual(again.returncode, 0, again.stderr)
+        self.assertNotIn("Downloaded", again.stdout)
+        self.assertIn("up to date", again.stdout)
+
+    def test_update_ignores_unreleased_commits(self) -> None:
+        project = self.install_with_project()
+        self.commit_to_source("unreleased.txt")
+        result = self.installed_pks(project, "update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.pks_home / "unreleased.txt").exists())
+
+    def test_update_without_a_connection_uses_what_it_has(self) -> None:
+        project = self.install_with_project()
+        self.source.rename(self.temp / "gone")
+        result = self.installed_pks(project, "update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Could not check for a newer PKS release", result.stdout)
+        self.assertEqual((project / ".pks" / "version").read_text(encoding="utf-8").strip(), VERSION)
+
+    def test_update_dry_run_only_reports_a_new_release(self) -> None:
+        project = self.install_with_project()
+        self.release_in_source()
+        result = self.installed_pks(project, "update", "--dry-run")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("PKS 9.9.9 is available", result.stdout)
+        self.assertEqual((self.pks_home / "VERSION").read_text(encoding="utf-8").strip(), VERSION)
+        self.assertEqual((project / ".pks" / "version").read_text(encoding="utf-8").strip(), VERSION)
+
+    def test_update_from_a_checkout_leaves_the_checkout(self) -> None:
+        project = self.temp / "project"
+        project.mkdir()
+        command = [sys.executable, str(self.source / "bin" / "pks")]
+        init = subprocess.run([*command, "init", "--yes"], cwd=project, env=self.env, text=True, capture_output=True)
+        self.assertEqual(init.returncode, 0, init.stderr)
+        run_git(self.source, "tag", "v9.9.9")
+        result = subprocess.run([*command, "update", "--yes"], cwd=project, env=self.env, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("Downloaded", result.stdout)
+        self.assertEqual((self.source / "VERSION").read_text(encoding="utf-8").strip(), VERSION)
+
+    def test_release_with_a_wrong_version_file_does_not_loop(self) -> None:
+        project = self.install_with_project()
+        self.commit_to_source("mistagged.txt")
+        run_git(self.source, "tag", "v9.9.9")
+        result = self.installed_pks(project, "update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count("Downloaded PKS 9.9.9."), 1)
 
     def test_uninstall_removes_the_download_and_leaves_projects(self) -> None:
         run_git(self.source, "tag", "v1.0.0")

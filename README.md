@@ -75,13 +75,13 @@ Status is the folder, so a folder listing shows it. Folders appear when first ne
 
 ## Update
 
-Run the install command again to get the new version. Then update each project when you want to:
+In each project, when you want to:
 
 ```bash
 pks update
 ```
 
-`pks update` replaces the `pks-*` skills and PKS's marked blocks in `AGENTS.md` and `CLAUDE.md`, and records the new version. It never touches `docs/` and commits nothing. It stops if the skills have uncommitted changes.
+`pks update` downloads the latest PKS release, so you don't need the install command again. Then it replaces the `pks-*` skills and PKS's marked blocks in `AGENTS.md` and `CLAUDE.md`, and records the new version. It never touches `docs/` and commits nothing. It stops if the skills have uncommitted changes.
 
 Your own workflows are safe if their names don't start with `pks-`.
 

@@ -2,6 +2,12 @@
 
 Mark a version that changes the `docs/` structure with `[docs-structure]`. `pks update` then tells people to run `pks-setup`.
 
+## 1.4.0
+
+`pks update` now downloads the latest PKS release by itself, then updates the project, so the install command is only needed the first time. Without a connection it says so and uses what it has. A development checkout stays as it is. If you have an older version, run the install command one last time.
+
+Ctrl+D at a question now ends with "Nothing changed" instead of an error listing.
+
 ## 1.3.0
 
 `pks-setup` now leads you through the setup step by step. It asks one question at a time, shows how many there are ("Question 2 of 5"), and offers answers, or you can write your own. An interrupted setup can continue in another conversation.

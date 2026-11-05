@@ -26,6 +26,7 @@ BLOCK = re.compile(r"<!-- PKS:START -->.*?<!-- PKS:END -->\n?", re.DOTALL)
 SKIPPED_NAMES = {"__pycache__", ".DS_Store"}
 SKIPPED_SUFFIXES = {".pyc"}
 DOCS_STRUCTURE_TAG = "[docs-structure]"
+RESTARTED = "PKS_RESTARTED"
 
 
 class PksError(Exception):
@@ -200,8 +201,12 @@ def confirm(assume_yes: bool) -> None:
         return
     if not sys.stdin.isatty():
         raise PksError("Nothing changed. Re-run with --yes to apply without a question.")
-    if input("Apply these changes? [y/N] ").strip().casefold() not in {"y", "yes"}:
-        raise PksError("Nothing changed.")
+    try:
+        answer = input("Apply these changes? [y/N] ")
+    except (EOFError, KeyboardInterrupt):
+        answer = ""
+    if answer.strip().casefold() not in {"y", "yes"}:
+        raise PksError("\nNothing changed.")
 
 
 def init_plan(root: Path) -> Plan:
@@ -316,11 +321,50 @@ def changes_since(installed: str, current: str) -> str:
     return "\n\n".join(newer)
 
 
+def package_git(*args: str) -> str | None:
+    """Run Git in the package folder; return its output, or None if it failed."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(PACKAGE_ROOT), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=60,
+            env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return completed.stdout if completed.returncode == 0 else None
+
+
+def download_latest_release(dry_run: bool) -> None:
+    """Move the download to the latest release and restart on its code. A checkout someone develops in stays."""
+    _, pks_home = install_locations()
+    if RESTARTED in os.environ or PACKAGE_ROOT != pks_home.resolve() or not (PACKAGE_ROOT / ".git").exists():
+        return
+    if package_git("fetch", "--quiet", "--tags", "origin") is None:
+        print(f"Could not check for a newer PKS release, so this uses {package_version()}. Check your connection.")
+        return
+    tags = (package_git("tag", "--list", "v[0-9]*", "--sort=-v:refname") or "").split()
+    latest = next((tag for tag in tags if re.fullmatch(r"v\d+(\.\d+)*", tag)), None)
+    if latest is None or parse_version(latest[1:]) <= parse_version(package_version()):
+        return
+    if dry_run:
+        print(f"PKS {latest[1:]} is available and a real update downloads it first. The list below is for {package_version()}.")
+        return
+    if package_git("checkout", "--quiet", latest) is None:
+        raise PksError(f"Could not switch {PACKAGE_ROOT} to {latest}. Remove it and run the install command again.")
+    print(f"Downloaded PKS {latest[1:]}.", flush=True)
+    os.environ[RESTARTED] = "1"
+    os.execv(sys.executable, [sys.executable, str(PACKAGE_ROOT / "bin" / "pks"), *sys.argv[1:]])
+
+
 def cmd_update(args: argparse.Namespace) -> int:
     root = project_root(args.path)
     version_path = root / VERSION_FILE
     if not version_path.exists():
         raise PksError(f"PKS is not installed in {root}. Use `pks init` first.")
+    download_latest_release(args.dry_run)
     installed = version_path.read_text(encoding="utf-8").strip()
     current = package_version()
     if parse_version(installed) > parse_version(current) and not args.force:
@@ -429,7 +473,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_shared(init)
     init.set_defaults(handler=cmd_init)
 
-    update = commands.add_parser("update", help="update PKS in a project; never touches docs/")
+    update = commands.add_parser("update", help="download the latest PKS and update a project; never touches docs/")
     add_shared(update)
     update.add_argument("--force", action="store_true", help="overwrite local changes to PKS skills")
     update.set_defaults(handler=cmd_update)
