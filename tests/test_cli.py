@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -226,21 +225,69 @@ class UpdateTest(PksTestCase):
 
 
 class InstallScriptTest(unittest.TestCase):
-    def test_links_the_command(self) -> None:
-        if shutil.which("sh") is None:
-            self.skipTest("sh is not available")
-        with tempfile.TemporaryDirectory() as temp:
-            bin_dir = Path(temp) / "bin"
-            for _ in range(2):
-                result = subprocess.run(
-                    ["sh", str(REPO_ROOT / "install.sh")],
-                    env={"PATH": "/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin", "PKS_BIN_DIR": str(bin_dir)},
-                    text=True,
-                    capture_output=True,
-                    check=False,
-                )
-                self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual((bin_dir / "pks").resolve(), PKS.resolve())
+    def setUp(self) -> None:
+        tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tempdir.cleanup)
+        self.temp = Path(tempdir.name)
+        self.bin_dir = self.temp / "bin"
+        self.pks_home = self.temp / "share" / "pks"
+        self.env = {
+            "PATH": "/usr/bin:/bin:/opt/homebrew/bin:/usr/local/bin",
+            "HOME": str(self.temp),
+            "PKS_BIN_DIR": str(self.bin_dir),
+            "PKS_HOME": str(self.pks_home),
+            "PKS_REPO_URL": REPO_ROOT.as_uri(),
+        }
+
+    def run_piped(self) -> subprocess.CompletedProcess[str]:
+        """Run the script the way `curl ... | sh` does: from stdin, in an unrelated folder."""
+        return subprocess.run(
+            ["sh"],
+            input=(REPO_ROOT / "install.sh").read_text(encoding="utf-8"),
+            cwd=self.temp,
+            env=self.env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+
+    def test_checkout_links_itself(self) -> None:
+        for _ in range(2):
+            result = subprocess.run(
+                ["sh", str(REPO_ROOT / "install.sh")],
+                env=self.env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.bin_dir / "pks").resolve(), PKS.resolve())
+        self.assertFalse(self.pks_home.exists())
+
+    def test_piped_script_downloads_and_can_run_again(self) -> None:
+        for _ in range(2):
+            result = self.run_piped()
+            self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.bin_dir / "pks").resolve(), (self.pks_home / "bin" / "pks").resolve())
+        version = subprocess.run([str(self.bin_dir / "pks"), "--version"], text=True, capture_output=True, env=self.env)
+        self.assertEqual(version.returncode, 0, version.stderr)
+        self.assertIn("pks ", version.stdout)
+
+    def test_foreign_install_folder_is_refused(self) -> None:
+        self.pks_home.mkdir(parents=True)
+        (self.pks_home / "mine.txt").write_text("keep\n", encoding="utf-8")
+        result = self.run_piped()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("not a PKS checkout", result.stderr)
+        self.assertEqual((self.pks_home / "mine.txt").read_text(encoding="utf-8"), "keep\n")
+
+    def test_existing_command_file_is_refused(self) -> None:
+        self.bin_dir.mkdir()
+        (self.bin_dir / "pks").write_text("mine\n", encoding="utf-8")
+        result = self.run_piped()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("not a link", result.stderr)
+        self.assertFalse(self.pks_home.exists())
 
 
 if __name__ == "__main__":

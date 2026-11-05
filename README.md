@@ -9,12 +9,12 @@ PKS is not a ticketing system and depends on none. If you use one, it keeps trac
 You need Git and Python 3.9 or newer.
 
 ```bash
-git clone git@github.com:sudrap/product-knowledge-system.git
-cd product-knowledge-system
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/sudrap/product-knowledge-system/main/install.sh | sh
 ```
 
-This links the `pks` command into `~/.local/bin`. To use another folder, set `PKS_BIN_DIR`.
+This downloads PKS to `~/.local/share/pks` and links the `pks` command into `~/.local/bin`. You can [read the script](install.sh) first. To use other folders, set `PKS_HOME` and `PKS_BIN_DIR`.
+
+To uninstall, delete `~/.local/bin/pks` and `~/.local/share/pks`. Projects keep their own files.
 
 ## Add it to a project
 
@@ -70,10 +70,9 @@ Status is the folder, so a folder listing shows it. Folders appear when first ne
 
 ## Update
 
-Get the new version, then update each project when you want to:
+Run the install command again to get the new version. Then update each project when you want to:
 
 ```bash
-git -C <path-to-product-knowledge-system> pull
 pks update
 ```
 
@@ -87,6 +86,8 @@ Your own workflows are safe if their names don't start with `pks-`.
 - Each project has its own copy of the skills and its own version.
 
 ## Develop
+
+Clone the repository and run `./install.sh` in it. This links your checkout, so `pks` uses your edits right away.
 
 ```bash
 python3 -m unittest discover -s tests
