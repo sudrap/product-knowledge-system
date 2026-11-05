@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="{{LANGUAGE}}">
+<head>
+<meta charset="utf-8">
+<title>{{PROJECT}}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #fcfcfa; --panel: #f3f2ee; --text: #1e2125; --muted: #666b72; --line: #e3e1da;
+  --accent: #1f6b57; --accent-soft: #dfeee8; --code: #f1f0eb;
+  --warn: #8a5610; --warn-soft: #f9edd5;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1c1e; --panel: #141618; --text: #e7e7e3; --muted: #a0a4a9; --line: #2e3135;
+    --accent: #84cdb8; --accent-soft: #20392f; --code: #26292c;
+    --warn: #e8c07a; --warn-soft: #3a2e18;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  display: grid; grid-template-columns: 280px minmax(0, 1fr);
+  background: var(--bg); color: var(--text);
+  font: 17px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+nav { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 22px 14px 40px; font-size: 14px; line-height: 1.35; }
+.project { font-size: 15px; font-weight: 650; padding: 0 10px 2px; overflow-wrap: anywhere; }
+.subtitle { color: var(--muted); font-size: 12.5px; padding: 0 10px 8px; }
+nav section { margin-top: 18px; }
+nav h2 { margin: 0 0 5px; padding: 0 10px; font-size: 12.5px; font-weight: 650; color: var(--muted); }
+nav h3 { display: flex; justify-content: space-between; align-items: center; margin: 12px 0 3px; padding: 0 10px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+nav h3 b { font-weight: 600; font-size: 11.5px; }
+nav h3.waiting { color: var(--warn); }
+nav h3.waiting b { background: var(--warn-soft); border-radius: 9px; padding: 0 7px; }
+nav a { display: flex; gap: 7px; padding: 6px 10px; border-radius: 7px; color: inherit; text-decoration: none; }
+nav a:hover { background: color-mix(in srgb, var(--text) 6%, transparent); }
+nav a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+nav .num { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
+main { overflow-y: auto; }
+article { max-width: 44rem; margin: 0 auto; padding: 44px 48px 90px; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 22px; }
+.meta code { background: none; padding: 0; font-size: 12.5px; color: inherit; }
+h1 { font-size: 31px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 18px; text-wrap: balance; }
+article h2 { font-size: 22px; line-height: 1.3; font-weight: 650; margin: 2em 0 .55em; padding-bottom: .25em; border-bottom: 1px solid var(--line); }
+article h3 { font-size: 18px; line-height: 1.35; font-weight: 650; margin: 1.6em 0 .4em; }
+article h4, article h5, article h6 { font-size: 16px; font-weight: 650; margin: 1.4em 0 .3em; }
+p { margin: 0 0 1em; }
+ul, ol { margin: 0 0 1em; padding-left: 1.45em; }
+li { margin: .3em 0; }
+li > ul, li > ol { margin: .3em 0 .4em; }
+li.task { list-style: none; position: relative; margin-left: -.2em; padding-left: 1.5em; }
+li.task::before { content: ""; position: absolute; left: 0; top: .32em; width: 1em; height: 1em; border: 1.5px solid var(--muted); border-radius: 4px; }
+li.task.done::before { content: "✓"; color: var(--bg); background: var(--accent); border-color: var(--accent); font-size: .8em; line-height: 1.2em; width: 1.25em; height: 1.25em; text-align: center; }
+li.task.done { color: var(--muted); }
+a { color: var(--accent); text-underline-offset: 2px; }
+strong { font-weight: 650; }
+code { font: .86em/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--code); padding: .12em .36em; border-radius: 5px; }
+pre { background: var(--code); border-radius: 9px; padding: 14px 16px; overflow-x: auto; margin: 0 0 1.2em; }
+pre code { background: none; padding: 0; font-size: 14px; line-height: 1.55; }
+blockquote { margin: 0 0 1.2em; padding: .1em 0 .1em 1em; border-left: 3px solid var(--accent); color: var(--muted); }
+blockquote p:last-child { margin-bottom: 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
+.table { overflow-x: auto; margin: 0 0 1.3em; }
+table { border-collapse: collapse; width: 100%; font-size: 15.5px; line-height: 1.45; }
+th { font-weight: 650; border-bottom: 2px solid var(--line); padding: 7px 14px 7px 0; vertical-align: bottom; }
+td { border-bottom: 1px solid var(--line); padding: 8px 14px 8px 0; vertical-align: top; }
+.left { text-align: left; } .center { text-align: center; } .right { text-align: right; }
+.unknown { display: inline-block; background: var(--warn-soft); color: var(--warn); font-size: .82em; font-weight: 550; padding: .02em .55em; border-radius: 10px; }
+.outside { border-bottom: 1px dotted var(--muted); }
+footer { margin-top: 2.4em; padding-top: 1em; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+#stopped { position: fixed; right: 16px; bottom: 16px; background: var(--warn-soft); color: var(--warn); font-size: 14px; padding: 8px 14px; border-radius: 8px; }
+@media (max-width: 720px) {
+  body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 38%) minmax(0, 1fr); }
+  nav { border-right: 0; border-bottom: 1px solid var(--line); }
+  article { padding: 24px 16px 60px; }
+}
+</style>
+</head>
+<body data-stamp="{{STAMP}}">
+<nav aria-label="Docs">
+  <div class="project">{{PROJECT}}</div>
+  <div class="subtitle">{{SUBTITLE}}</div>
+  {{NAV}}
+</nav>
+<main>
+{{ARTICLES}}
+</main>
+<div id="stopped" role="status" hidden>{{STOPPED}}</div>
+<script nonce="{{NONCE}}">
+const articles = [...document.querySelectorAll('article')];
+const links = [...document.querySelectorAll('nav a')];
+const main = document.querySelector('main');
+const stopped = document.getElementById('stopped');
+const SCROLL_KEY = 'pks-view-scroll';
+
+function show() {
+  const target = document.getElementById(location.hash.slice(1)) || articles[0];
+  articles.forEach(article => { article.hidden = article !== target; });
+  links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === '#' + target.id));
+  main.scrollTop = 0;
+}
+
+async function checkForChanges() {
+  try {
+    const response = await fetch('stamp', { cache: 'no-store' });
+    const current = await response.text();
+    stopped.hidden = true;
+    if (response.ok && current !== document.body.dataset.stamp) {
+      try { sessionStorage.setItem(SCROLL_KEY, String(main.scrollTop)); } catch (error) {}
+      location.reload();
+      return;
+    }
+  } catch (error) {
+    stopped.hidden = false;
+  }
+  setTimeout(checkForChanges, 1500);
+}
+
+window.addEventListener('hashchange', show);
+show();
+try {
+  const saved = sessionStorage.getItem(SCROLL_KEY);
+  if (saved) {
+    main.scrollTop = Number(saved);
+    sessionStorage.removeItem(SCROLL_KEY);
+  }
+} catch (error) {}
+setTimeout(checkForChanges, 1500);
+</script>
+</body>
+</html>

@@ -52,6 +52,8 @@ Just work. Ask for `/pks-help` or `$pks-help` any time.
 - **"Let's brainstorm"** starts `pks-brainstorm`: one question at a time, with notes in `.pks/brainstorms/`, so you can continue in another conversation. At the end you decide what goes to `docs/`, and the notes are deleted.
 - **"Run an audit"** and **"go through the inbox"** run `pks-audit`, only when you ask.
 
+To read the documentation comfortably, run `pks view` in the project or ask the agent with `/pks-view` or `$pks-view`. It opens `docs/` in your browser, with all documents in a side panel and formatted text. It only reads, and it updates by itself when a document changes. Only this computer can reach it. Press Ctrl+C to stop it.
+
 ## What ends up in `docs/`
 
 ```text

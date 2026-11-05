@@ -28,9 +28,10 @@ Show this briefly, in the user's language, and adapt the invocation to the tool:
 | "Go through the inbox", "projdi inbox" | Proposals for each new idea (`pks-audit`) |
 | "Run an audit", "udělej audit" | Report on what is outdated or ready to plan (`pks-audit`) |
 | "Update my tracker from the roadmap" | The agent uses whatever tracker access it has |
+| "Show me the docs", "ukaž mi dokumentaci" | `docs/` opens in your browser, read-only (`pks-view`) |
 
-**Skills:** `pks-setup` (initial fill), `pks-capture`, `pks-brainstorm`, `pks-audit`, `pks-help`.
+**Skills:** `pks-setup` (initial fill), `pks-capture`, `pks-brainstorm`, `pks-audit`, `pks-view`, `pks-help`.
 
-**Terminal commands:** `pks init` installs PKS into a project. `pks update` downloads the latest release, updates the project and never touches `docs/`. Both only change files; committing is up to you. `pks uninstall` removes the command from this computer; projects stay as they are.
+**Terminal commands:** `pks init` installs PKS into a project. `pks update` downloads the latest release, updates the project and never touches `docs/`. Both only change files; committing is up to you. `pks view` shows `docs/` in your browser and changes nothing. `pks uninstall` removes the command from this computer; projects stay as they are.
 
 **Where things are:** `PROJECT.md`, `product.md`, `business.md`, `architecture.md`, `roadmap.md` and, once needed, `development.md`, plus `discovery/`, `decisions/` and `features/`. In `discovery/` and `decisions/`, what is current sits directly in the folder; subfolders hold what is waiting or finished.

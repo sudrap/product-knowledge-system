@@ -2,6 +2,10 @@
 
 Mark a version that changes the `docs/` structure with `[docs-structure]`. `pks update` then tells people to run `pks-setup`.
 
+## 1.5.0
+
+Add the `pks view` command and the `pks-view` skill: read `docs/` in your browser, with all documents in a side panel and formatted text. It only reads, only this computer can reach it, and the page updates by itself when a document changes.
+
 ## 1.4.0
 
 `pks update` now downloads the latest PKS release by itself, then updates the project, so the install command is only needed the first time. Without a connection it says so and uses what it has. A development checkout stays as it is. If you have an older version, run the install command one last time.

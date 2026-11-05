@@ -459,6 +459,17 @@ def cmd_uninstall(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_view(args: argparse.Namespace) -> int:
+    root = project_root(args.path)
+    docs = existing_path(root, Path("docs"))
+    if docs is None or not docs.is_dir():
+        raise PksError(f"There is no docs/ folder in {root}. Use `pks init` first.")
+    sys.path.insert(0, str(PACKAGE_ROOT / "viewer"))
+    import docs_viewer
+
+    return docs_viewer.serve(root, docs, open_browser=not args.no_open)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="pks", description=__doc__)
     parser.add_argument("--version", action="version", version=f"pks {package_version()}")
@@ -477,6 +488,11 @@ def build_parser() -> argparse.ArgumentParser:
     add_shared(update)
     update.add_argument("--force", action="store_true", help="overwrite local changes to PKS skills")
     update.set_defaults(handler=cmd_update)
+
+    view = commands.add_parser("view", help="read the project's docs/ in your browser; changes nothing")
+    view.add_argument("path", nargs="?", default=".", help="project folder (default: current folder)")
+    view.add_argument("--no-open", action="store_true", help="only print the link, do not open the browser")
+    view.set_defaults(handler=cmd_view)
 
     uninstall = commands.add_parser("uninstall", help="remove the pks command and its download; projects stay as they are")
     uninstall.add_argument("--yes", action="store_true", help="apply without asking")

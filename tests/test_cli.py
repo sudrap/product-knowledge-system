@@ -3,18 +3,22 @@
 
 from __future__ import annotations
 
+import http.client
 import os
 import pty
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+import urllib.parse
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 PKS = REPO_ROOT / "bin" / "pks"
 VERSION = (REPO_ROOT / "VERSION").read_text(encoding="utf-8").strip()
-SKILLS = ["pks-audit", "pks-brainstorm", "pks-capture", "pks-help", "pks-setup"]
+SKILLS = ["pks-audit", "pks-brainstorm", "pks-capture", "pks-help", "pks-setup", "pks-view"]
 
 
 def run_git(root: Path, *args: str) -> None:
@@ -473,6 +477,162 @@ class InstallScriptTest(unittest.TestCase):
         self.assertIn("Nothing changed", result.stdout)
         self.assertEqual((self.bin_dir / "pks").read_text(encoding="utf-8"), "mine\n")
         self.assertEqual((self.pks_home / "mine.txt").read_text(encoding="utf-8"), "keep\n")
+
+
+class ViewTest(unittest.TestCase):
+    def setUp(self) -> None:
+        tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tempdir.cleanup)
+        self.temp = Path(tempdir.name)
+        self.root = self.temp / "project"
+        self.write("docs/PROJECT.md", "# My project\n\nSee [the product](product.md), [the readme](../README.md), [a site](https://example.com/?a=1&b=2) and [bad](javascript:alert(1)).\n\nOpen: [unknown]\n")
+        self.write("docs/product.md", "# Product\n\n**Bold** and `code` and <script>alert(1)</script>.\n\n| Plan | Price |\n| --- | ---: |\n| Free | 0 |\n\n- one\n  - nested\n- [x] done\n\n```sql\nselect '<b>';\n```\n\n> A quote\n")
+        self.write("docs/decisions/0001-valid.md", "---\ntype: product\nupdated: 2026-11-05\nrelated: [0002-waiting]\n---\n\n# A valid decision\n")
+        self.write("docs/decisions/proposed/0002-waiting.md", "---\ntype: technical\n---\n\n# A waiting decision\n")
+        self.write("docs/discovery/inbox/new-idea.md", "# A new idea\n")
+        self.write("docs/guides/setup.md", "# A guide in another folder\n")
+        self.process: subprocess.Popen[str] | None = None
+
+    def write(self, relative: str, text: str) -> None:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def start(self, *args: str, env: dict[str, str] | None = None) -> str:
+        self.process = subprocess.Popen(
+            [sys.executable, str(PKS), "view", *args],
+            cwd=self.root,
+            env=env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.DEVNULL,
+        )
+        self.addCleanup(self.stop)
+        self.assertTrue(self.process.stdout.readline().startswith("Viewing "))
+        url = self.process.stdout.readline().strip()
+        self.assertTrue(url.startswith("http://127.0.0.1:"), url)
+        self.process.stdout.readline()
+        return url
+
+    def stop(self) -> None:
+        if self.process and self.process.poll() is None:
+            self.process.kill()
+        if self.process:
+            self.process.communicate(timeout=10)
+
+    def get(self, url: str, method: str = "GET", headers: dict[str, str] | None = None) -> tuple[int, str]:
+        parts = urllib.parse.urlsplit(url)
+        connection = http.client.HTTPConnection(parts.hostname, parts.port, timeout=10)
+        self.addCleanup(connection.close)
+        connection.request(method, parts.path, headers=headers or {})
+        response = connection.getresponse()
+        return response.status, response.read().decode("utf-8", errors="replace")
+
+    def test_page_shows_formatted_documents_grouped_by_status(self) -> None:
+        status, page = self.get(self.start("--no-open"))
+        self.assertEqual(status, 200)
+        for expected in (
+            "<h1>Product</h1>",
+            "<strong>Bold</strong>",
+            "<code>code</code>",
+            '<th class="right">Price</th>',
+            "<li>one<ul><li>nested</li></ul></li>",
+            'class="task done"',
+            "<blockquote>",
+            "Waiting for a decision",
+            "A guide in another folder",
+            ">guides<",
+            '<span class="unknown">not known yet</span>',
+            "product decision",
+            "updated 2026-11-05",
+            "Related: <a",
+        ):
+            self.assertIn(expected, page)
+        self.assertNotIn("type: product", page)
+        self.assertLess(page.index(">My project<"), page.index(">Product<"))
+        self.assertLess(page.index(">Valid<"), page.index(">Waiting for a decision<"))
+
+    def test_labels_follow_the_browser_language(self) -> None:
+        _, page = self.get(self.start("--no-open"), headers={"Accept-Language": "cs-CZ,cs;q=0.9"})
+        self.assertIn("Čeká na rozhodnutí", page)
+        self.assertIn("zatím nevíme", page)
+        self.assertIn('lang="cs"', page)
+
+    def test_labels_follow_the_documentation_language_first(self) -> None:
+        self.write("docs/PROJECT.md", "# My project\n\n**Jazyk dokumentace:** čeština\n")
+        url = self.start("--no-open")
+        self.assertIn("Čeká na rozhodnutí", self.get(url, headers={"Accept-Language": "en-GB"})[1])
+        self.write("docs/PROJECT.md", "# My project\n\n**Documentation language:** English\n")
+        self.assertIn("Waiting for a decision", self.get(url, headers={"Accept-Language": "cs-CZ"})[1])
+
+    def test_links_and_text_are_safe(self) -> None:
+        _, page = self.get(self.start("--no-open"))
+        self.assertIn('<a href="#product">the product</a>', page)
+        self.assertIn('class="outside"', page)
+        self.assertIn('href="https://example.com/?a=1&amp;b=2" target="_blank" rel="noopener noreferrer"', page)
+        self.assertNotIn('href="javascript', page)
+        self.assertNotIn("<script>alert", page)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", page)
+        self.assertIn("select &#x27;&lt;b&gt;&#x27;;", page)
+
+    def test_only_the_secret_link_on_this_computer_works(self) -> None:
+        url = self.start("--no-open")
+        origin = url[: url.index("/", len("http://"))]
+        self.assertEqual(self.get(url)[0], 200)
+        self.assertEqual(self.get(f"{origin}/")[0], 404)
+        self.assertEqual(self.get(f"{origin}/wrong/")[0], 404)
+        self.assertEqual(self.get(f"{url}../../etc/passwd")[0], 404)
+        self.assertEqual(self.get(url, headers={"Host": "evil.example"})[0], 403)
+        self.assertEqual(self.get(url, method="POST")[0], 501)
+
+    def test_page_notices_changes_and_nothing_is_written(self) -> None:
+        def snapshot() -> dict[str, bytes]:
+            return {str(path): path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
+
+        before = snapshot()
+        url = self.start("--no-open")
+        status, first = self.get(f"{url}stamp")
+        self.assertEqual(status, 200)
+        self.assertEqual(self.get(f"{url}stamp")[1], first)
+        self.assertIn(f'data-stamp="{first}"', self.get(url)[1])
+        self.assertEqual(snapshot(), before)
+
+        self.write("docs/product.md", "# Changed title\n")
+        self.assertNotEqual(self.get(f"{url}stamp")[1], first)
+        self.assertIn("Changed title", self.get(url)[1])
+
+    def test_opens_the_browser_unless_told_not_to(self) -> None:
+        marker = self.temp / "opened.txt"
+        script = self.temp / "fake-browser"
+        script.write_text(f'#!/bin/sh\nprintf "%s" "$1" > "{marker}"\n', encoding="utf-8")
+        script.chmod(0o755)
+        url = self.start(env={**os.environ, "BROWSER": f"{script} %s"})
+        deadline = time.monotonic() + 10
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertEqual(marker.read_text(encoding="utf-8"), url)
+
+    def test_ctrl_c_stops_it_cleanly(self) -> None:
+        self.start("--no-open")
+        self.process.send_signal(signal.SIGINT)
+        output, errors = self.process.communicate(timeout=10)
+        self.assertEqual(self.process.returncode, 0, errors)
+        self.assertIn("Stopped.", output)
+        self.assertNotIn("Traceback", errors)
+
+    def test_project_without_docs_is_refused(self) -> None:
+        empty = self.temp / "empty"
+        empty.mkdir()
+        result = subprocess.run(
+            [sys.executable, str(PKS), "view", str(empty), "--no-open"],
+            text=True,
+            capture_output=True,
+            stdin=subprocess.DEVNULL,
+            timeout=30,
+        )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("no docs/ folder", result.stderr)
 
 
 class ReleaseTest(unittest.TestCase):

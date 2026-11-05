@@ -1,0 +1,4 @@
+interface:
+  display_name: "PKS View"
+  short_description: "Read the project's docs in the browser"
+  default_prompt: "Use $pks-view to open this project's documentation in the browser."
