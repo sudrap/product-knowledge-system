@@ -1,2 +1,7 @@
 __pycache__/
 *.py[cod]
+
+# Local notes for agents, on this computer only
+/AGENTS.md
+/CLAUDE.md
+/docs/
