@@ -70,9 +70,14 @@ class InitTest(PksTestCase):
         for name in ("PROJECT", "product", "business", "architecture", "roadmap"):
             self.assertTrue((self.root / "docs" / f"{name}.md").is_file(), name)
         self.assertEqual((self.root / ".pks/version").read_text(encoding="utf-8").strip(), VERSION)
-        self.assertIn(".pks/brainstorms/", (self.root / ".gitignore").read_text(encoding="utf-8"))
+        self.assertIn(".pks/notes/", (self.root / ".gitignore").read_text(encoding="utf-8").splitlines())
         self.assertIn("## Product knowledge (PKS)", (self.root / "AGENTS.md").read_text(encoding="utf-8"))
-        self.assertIn("@AGENTS.md", (self.root / "CLAUDE.md").read_text(encoding="utf-8"))
+        claude = (self.root / "CLAUDE.md").read_text(encoding="utf-8")
+        self.assertIn("@AGENTS.md\n", claude)
+        self.assertIn("@docs/PROJECT.md\n", claude)
+        project = (self.root / "docs/PROJECT.md").read_text(encoding="utf-8")
+        for field in ("**Updated:**", "**In progress:**", "**Next:**", "**Watch out:**"):
+            self.assertIn(field, project)
         self.assertFalse((self.root / "docs/development.md").exists())
         self.assertFalse((self.root / "docs/INDEX.md").exists())
 
@@ -119,6 +124,25 @@ class InitTest(PksTestCase):
         self.assertIn("@AGENTS.md", claude)
         self.assertTrue(agents.startswith("# Agent rules\n"))
         self.assertIn("## Product knowledge (PKS)", agents)
+
+    def test_rules_repeated_in_both_instruction_files_are_reported_not_changed(self) -> None:
+        shared = "## Where the state is\n\nRead the status section of the roadmap first, before anything else.\n"
+        self.write("CLAUDE.md", f"# Rules\n\n{shared}")
+        self.write("AGENTS.md", f"# Rules\n\n{shared}\nOnly for Codex: a longer rule that Claude does not have.\n")
+        result = self.pks("init", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("CLAUDE.md repeats 1 paragraph of AGENTS.md", result.stdout)
+        self.assertTrue((self.root / "CLAUDE.md").read_text(encoding="utf-8").startswith(f"# Rules\n\n{shared}"))
+        update = self.pks("update", "--yes")
+        self.assertEqual(update.returncode, 0, update.stderr)
+        self.assertIn("CLAUDE.md repeats 1 paragraph", update.stdout)
+
+    def test_distinct_instruction_files_get_no_note(self) -> None:
+        self.write("CLAUDE.md", "# Claude\n\nAnswer in Czech and keep replies short, whatever the task.\n")
+        self.write("AGENTS.md", "# Agents\n\nRun the tests on both Python versions before reporting.\n")
+        result = self.pks("init", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("repeats", result.stdout)
 
     def test_symlinked_instruction_files_get_the_rule_once(self) -> None:
         self.write("AGENTS.md", "# Shared\n")
@@ -214,16 +238,48 @@ class UpdateTest(PksTestCase):
         self.assertNotIn("old rule", agents)
         self.assertIn("## Product knowledge (PKS)", agents)
 
-    def test_uncommitted_skill_changes_stop_the_update(self) -> None:
-        self.install_and_commit()
+    def test_skills_are_replaced_without_a_commit(self) -> None:
+        run_git(self.root, "init")
+        self.assertEqual(self.pks("init", "--yes").returncode, 0)
         skill = self.root / ".claude/skills/pks-capture/SKILL.md"
         skill.write_text("local edit\n", encoding="utf-8")
+        self.write(".pks/version", "0.9.0\n")
         result = self.pks("update", "--yes")
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("uncommitted", result.stderr)
-        self.assertEqual(skill.read_text(encoding="utf-8"), "local edit\n")
-        self.assertEqual(self.pks("update", "--yes", "--force").returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotEqual(skill.read_text(encoding="utf-8"), "local edit\n")
+        self.assertEqual((self.root / ".pks/version").read_text(encoding="utf-8").strip(), VERSION)
+
+    def test_old_brainstorm_notes_move_to_the_notes_folder(self) -> None:
+        self.install_and_commit()
+        self.write(".pks/brainstorms/setup.md", "# PKS setup\n\nQuestion 8 of 10\n")
+        self.write(".pks/brainstorms/2026-11-01-pricing.md", "# Pricing\n")
+        self.write(".pks/notes/2026-11-01-pricing.md", "# Newer pricing notes\n")
+        self.write(".gitignore", "node_modules/\n.pks/brainstorms/\n")
+        self.write(".pks/version", "0.9.0\n")
+
+        result = self.pks("update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(".pks/brainstorms/ -> .pks/notes/", result.stdout)
+        self.assertEqual(
+            (self.root / ".pks/notes/setup.md").read_text(encoding="utf-8"), "# PKS setup\n\nQuestion 8 of 10\n"
+        )
+        self.assertFalse((self.root / ".pks/brainstorms/setup.md").exists())
+        self.assertEqual(
+            (self.root / ".pks/notes/2026-11-01-pricing.md").read_text(encoding="utf-8"), "# Newer pricing notes\n"
+        )
+        self.assertEqual(
+            (self.root / ".pks/brainstorms/2026-11-01-pricing.md").read_text(encoding="utf-8"), "# Pricing\n"
+        )
+        self.assertIn(".pks/brainstorms/2026-11-01-pricing.md", result.stdout)
+        self.assertEqual((self.root / ".gitignore").read_text(encoding="utf-8"), "node_modules/\n.pks/notes/\n")
+
+    def test_empty_old_notes_folder_is_removed(self) -> None:
+        self.install_and_commit()
+        self.write(".pks/brainstorms/old.md", "# Old\n")
+        self.write(".pks/version", "0.9.0\n")
+        self.assertEqual(self.pks("update", "--yes").returncode, 0)
+        self.assertFalse((self.root / ".pks/brainstorms").exists())
+        self.assertTrue((self.root / ".pks/notes/old.md").is_file())
 
     def test_newer_project_version_is_refused(self) -> None:
         self.install_and_commit()
@@ -231,6 +287,8 @@ class UpdateTest(PksTestCase):
         result = self.pks("update", "--yes")
         self.assertEqual(result.returncode, 1)
         self.assertIn("newer", result.stderr)
+        self.assertEqual(self.pks("update", "--yes", "--force").returncode, 0)
+        self.assertEqual((self.root / ".pks/version").read_text(encoding="utf-8").strip(), VERSION)
 
     def test_dry_run_changes_nothing(self) -> None:
         self.install_and_commit()

@@ -4,12 +4,12 @@ Use this as the default. Extend it only when the project has a justified need, a
 
 ```text
 project/
-├── AGENTS.md                 # marked PKS block with the rule
-├── CLAUDE.md                 # marked @AGENTS.md import
+├── AGENTS.md                 # the project's rules for every agent, with the marked PKS block
+├── CLAUDE.md                 # marked imports of AGENTS.md and docs/PROJECT.md, plus Claude-only rules
 ├── .pks/
 │   ├── version               # installed PKS version, tracked in Git
 │   ├── migrations/           # plans, maps and reports from migrations, tracked
-│   └── brainstorms/          # working notes, ignored by Git
+│   └── notes/                # working notes per topic, ignored by Git
 ├── .claude/skills/pks-*/     # skills for Claude Code
 ├── .agents/skills/pks-*/     # skills for Codex
 └── docs/
@@ -34,11 +34,11 @@ Folders appear when they first hold something. There are no index files: the rul
 
 | Location | Holds |
 | --- | --- |
-| `docs/PROJECT.md` | purpose, current state, unknowns, documentation language, other locations and which are read-only |
+| `docs/PROJECT.md` | purpose, current state (updated, in progress, next, watch out), unknowns, documentation language, other locations and which are read-only |
 | `docs/product.md` | vision, target users, value, strategy |
 | `docs/business.md` | monetization, pricing, competitors, metrics |
 | `docs/architecture.md` | structure and tech stack, not details that can be read from the code |
-| `docs/roadmap.md` | what is planned and why, as Now / Next / Later |
+| `docs/roadmap.md` | the direction and the reasons, as Now / Next / Later; not a task list |
 | `docs/development.md` | how to build, run and debug, solved problems, pointers to design systems |
 | `docs/discovery/` | ideas under consideration, brainstorm results, hypotheses, research |
 | `docs/decisions/` | valid product, business and technical decisions |
@@ -46,7 +46,9 @@ Folders appear when they first hold something. There are no index files: the rul
 
 A long file can be split later, for example `docs/product.md` into `docs/product/`. Record the split in `docs/PROJECT.md` under other locations, because the rule's map stays the same.
 
-**Tracker:** tasks, assignees and task status belong in a tracker if the project uses one. All know-how and decisions stay in `docs/`, whichever phase they come from. PKS depends on no specific tracker.
+**Working notes:** `.pks/notes/` holds the agent's notes per topic until the user decides what goes to `docs/`. They are never the record.
+
+**Instruction files:** shared rules live only in `AGENTS.md`. `CLAUDE.md` imports it and keeps only what is for Claude alone.
 
 **Other material:** existing folders such as a design folder stay where they are. `docs/` links to them.
 

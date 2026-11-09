@@ -32,7 +32,7 @@ The user does not know how PKS works inside. Lead them through the setup step by
 2. Choose:
    - **New project** (no real code or documents yet): use the short path.
    - **Project with history:** use the full path.
-   - **Re-run:** read `.pks/brainstorms/setup.md` if it exists and continue from its first open question. Otherwise interview only about what is still `[unknown]` or missing. Do not redo approved work. After a docs structure change, compare `docs/` with the layout and propose the moves in the review.
+   - **Re-run:** read `.pks/notes/setup.md` if it exists and continue from its first open question. Otherwise interview only about what is still `[unknown]` or missing. Do not redo approved work. After a docs structure change, compare `docs/` with the layout and propose the moves in the review.
 
 ## Interview
 
@@ -60,7 +60,7 @@ Or write your own answer.
 
 ### Notes
 
-After every answer, before the next question, update `.pks/brainstorms/setup.md`, including answers in the review. Git ignores this folder. The file is the source of truth, so the setup can continue if the conversation ends.
+After every answer, before the next question, update `.pks/notes/setup.md`, including answers in the review. These are working notes as in `pks-capture`, and Git ignores this folder. The file is the source of truth, so the setup can continue if the conversation ends.
 
 ```markdown
 # PKS setup
@@ -114,7 +114,7 @@ Compare what you found with what the documentation should cover:
 
 | Goes to | Covers |
 | --- | --- |
-| `docs/PROJECT.md` | purpose, current state, other locations |
+| `docs/PROJECT.md` | purpose, current state (in progress, next, watch out), other locations |
 | `docs/product.md` | vision, target users, value, strategy |
 | `docs/business.md` | monetization, pricing, competitors, metrics |
 | `docs/architecture.md` | structure, tech stack, reasons for the main choices |
@@ -150,6 +150,8 @@ Say that the questions are finished and nothing has been written yet. Then lead 
 3. **Existing material.** Name anything that would change. Then list what needs the user's word, each with your proposal:
    - a document that overlaps a PKS one, for example an existing `docs/ARCHITECTURE.md`. Prefer keeping it and linking to it from `docs/PROJECT.md`;
    - every Claude memory file, with its destination: `docs/`, global instruction files, or leave it;
+   - rules in `CLAUDE.md` that repeat `AGENTS.md`. Propose keeping shared rules only in `AGENTS.md` and leaving in `CLAUDE.md` only what is for Claude alone, plus the PKS block;
+   - rules in instruction files that point to material being migrated, or that PKS now covers, such as "read this first" or "update the docs in the same change". Propose removing them or pointing them to `docs/`;
    - locations to treat as read-only;
    - secret-looking files.
 4. **Go-ahead.** Say in a few lines what happens on yes: the files get written, existing files stay as agreed, Claude's automatic memory is turned off for this project because everything now lives in `docs/`, and nothing is committed.
@@ -174,11 +176,11 @@ C. Add something
 
 ### 5. Write what was approved
 
-- `docs/PROJECT.md`: purpose, current state, unknowns, language, and the "Other locations" table with read-only marks.
+- `docs/PROJECT.md`: purpose, the current state in the form from `pks-capture` (updated, in progress, next, watch out), unknowns, language, and the "Other locations" table with read-only marks. Mark a document outside `docs/` that describes the project, such as a user guide, as not read-only, so it is kept true.
 - `docs/product.md` and `docs/business.md`: what the project and the interview established.
 - `docs/architecture.md`: an overview and the tech stack, not implementation details that can be read from the code.
 - `docs/development.md`: only if there is something to say about building, running, debugging or solved problems, or a pointer to a design system.
-- `docs/roadmap.md`: what is planned and why. Tasks stay in the tracker, if there is one.
+- `docs/roadmap.md`: the direction and the reasons, not a task list.
 - `docs/decisions/` and `docs/decisions/proposed/`: as agreed in the review. Use the record format in the layout reference.
 
 ### 6. Verify
@@ -196,4 +198,4 @@ Do this last, after anything worth keeping has been migrated. Merge `"autoMemory
 
 ## Finish
 
-Delete `.pks/brainstorms/setup.md`. In a short block, say what was written, what stays `[unknown]`, and, after a migration, whether verification passed. Mention in one line that `[unknown]` items get filled in during later work or by running `pks-setup` again, and that `pks-help` shows the rest. Then ask whether to commit only the PKS changes: "Yes" or "No".
+Delete `.pks/notes/setup.md`. In a short block, say what was written, what stays `[unknown]`, and, after a migration, whether verification passed. Mention in one line that `[unknown]` items get filled in during later work or by running `pks-setup` again, and that `pks-help` shows the rest. Then ask whether to commit only the PKS changes: "Yes" or "No".

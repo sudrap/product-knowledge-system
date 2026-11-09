@@ -21,7 +21,11 @@ TEMPLATES = PACKAGE_ROOT / "templates"
 
 VERSION_FILE = Path(".pks/version")
 TOOL_SKILL_DIRS = (Path(".claude/skills"), Path(".agents/skills"))
-BRAINSTORMS_IGNORE = ".pks/brainstorms/"
+NOTES_DIR = Path(".pks/notes")
+NOTES_IGNORE = ".pks/notes/"
+OLD_NOTES_DIR = Path(".pks/brainstorms")
+OLD_NOTES_IGNORE = ".pks/brainstorms/"
+MIN_REPEATED_PARAGRAPH = 40
 BLOCK = re.compile(r"<!-- PKS:START -->.*?<!-- PKS:END -->\n?", re.DOTALL)
 SKIPPED_NAMES = {"__pycache__", ".DS_Store"}
 SKIPPED_SUFFIXES = {".pyc"}
@@ -38,16 +42,18 @@ class Plan:
     create: list[str] = field(default_factory=list)
     change: list[str] = field(default_factory=list)
     remove: list[str] = field(default_factory=list)
+    move: list[str] = field(default_factory=list)
     left_untouched: list[str] = field(default_factory=list)
 
     def is_empty(self) -> bool:
-        return not (self.create or self.change or self.remove)
+        return not (self.create or self.change or self.remove or self.move)
 
     def show(self) -> None:
         for label, marker, paths in (
             ("Create", "+", self.create),
             ("Change", "~", self.change),
             ("Remove", "-", self.remove),
+            ("Move", ">", self.move),
             ("Already exists, left untouched for pks-setup", "!", self.left_untouched),
         ):
             if paths:
@@ -139,14 +145,84 @@ def instruction_files(root: Path) -> list[tuple[Path, str]]:
 
 def gitignore_needs_entry(root: Path) -> bool:
     path = root / ".gitignore"
-    return not path.exists() or BRAINSTORMS_IGNORE not in path.read_text(encoding="utf-8").splitlines()
+    if not path.exists():
+        return True
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return NOTES_IGNORE not in lines or OLD_NOTES_IGNORE in lines
 
 
-def add_gitignore_entry(root: Path) -> None:
+def update_gitignore(root: Path) -> None:
+    """Ignore the working notes; an entry for the old notes folder becomes the new one."""
     path = root / ".gitignore"
     text = path.read_text(encoding="utf-8") if path.exists() else ""
+    lines = text.splitlines()
+    if OLD_NOTES_IGNORE in lines:
+        renamed = [NOTES_IGNORE if line == OLD_NOTES_IGNORE else line for line in lines]
+        first = renamed.index(NOTES_IGNORE)
+        kept = [line for index, line in enumerate(renamed) if line != NOTES_IGNORE or index == first]
+        path.write_text("\n".join(kept) + "\n", encoding="utf-8")
+        return
     separator = "" if not text or text.endswith("\n") else "\n"
-    path.write_text(f"{text}{separator}{BRAINSTORMS_IGNORE}\n", encoding="utf-8")
+    path.write_text(f"{text}{separator}{NOTES_IGNORE}\n", encoding="utf-8")
+
+
+def old_notes(root: Path) -> list[Path]:
+    folder = root / OLD_NOTES_DIR
+    if not folder.is_dir() or folder.is_symlink():
+        return []
+    return sorted(path for path in folder.rglob("*") if path.is_file())
+
+
+def move_old_notes(root: Path) -> list[str]:
+    """Move notes from the old folder into the notes folder; return those left because the name is taken."""
+    folder = root / OLD_NOTES_DIR
+    left = []
+    for path in old_notes(root):
+        target = root / NOTES_DIR / path.relative_to(folder)
+        if target.exists():
+            left.append(path.relative_to(root).as_posix())
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        path.rename(target)
+    if folder.is_dir() and not folder.is_symlink():
+        for directory in sorted((path for path in folder.rglob("*") if path.is_dir()), reverse=True):
+            if not any(directory.iterdir()):
+                directory.rmdir()
+        if not any(folder.iterdir()):
+            folder.rmdir()
+    return left
+
+
+def paragraphs_outside_block(path: Path) -> set[str]:
+    text = BLOCK.sub("", path.read_text(encoding="utf-8", errors="replace"))
+    found = set()
+    for chunk in re.split(r"\n\s*\n", text):
+        normalized = " ".join(chunk.split())
+        if len(normalized) >= MIN_REPEATED_PARAGRAPH:
+            found.add(normalized)
+    return found
+
+
+def repeated_rules(root: Path) -> int:
+    """Count paragraphs of AGENTS.md that CLAUDE.md repeats outside the PKS blocks."""
+    agents = existing_path(root, Path("AGENTS.md"))
+    claude = existing_path(root, Path("CLAUDE.md"))
+    if agents is None or claude is None or not agents.is_file() or not claude.is_file():
+        return 0
+    if agents.resolve() == claude.resolve():
+        return 0
+    return len(paragraphs_outside_block(claude) & paragraphs_outside_block(agents))
+
+
+def warn_about_repeated_rules(root: Path) -> None:
+    count = repeated_rules(root)
+    if count:
+        noun = "paragraph" if count == 1 else "paragraphs"
+        print(
+            f"Note: CLAUDE.md repeats {count} {noun} of AGENTS.md. With PKS, CLAUDE.md imports AGENTS.md, "
+            "so Claude reads them twice.\nKeep shared rules only in AGENTS.md. /pks-setup (Claude Code) or "
+            "$pks-setup (Codex) offers to clean this up. PKS does not change them for you."
+        )
 
 
 def is_git_repository(root: Path) -> bool:
@@ -157,17 +233,6 @@ def is_git_repository(root: Path) -> bool:
         check=False,
     )
     return completed.returncode == 0
-
-
-def uncommitted_skill_changes(root: Path) -> list[str]:
-    pathspecs = [f"{skills_dir.as_posix()}/pks-*" for skills_dir in TOOL_SKILL_DIRS]
-    completed = subprocess.run(
-        ["git", "-C", str(root), "status", "--porcelain", "--", *pathspecs],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    return completed.stdout.splitlines() if completed.returncode == 0 else []
 
 
 def ignored_by_git(root: Path, paths: list[Path]) -> list[str]:
@@ -257,6 +322,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     plan = init_plan(root)
     print(f"PKS {package_version()} into {root}")
     plan.show()
+    warn_about_repeated_rules(root)
     if args.dry_run:
         print("Dry run: nothing changed.")
         return 0
@@ -275,7 +341,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         text = path.read_text(encoding="utf-8") if path.exists() else ""
         path.write_text(with_block(text, block), encoding="utf-8")
     if gitignore_needs_entry(root):
-        add_gitignore_entry(root)
+        update_gitignore(root)
     version_path.parent.mkdir(parents=True, exist_ok=True)
     version_path.write_text(f"{package_version()}\n", encoding="utf-8")
 
@@ -303,6 +369,8 @@ def update_plan(root: Path, installed: str, current: str) -> Plan:
             (plan.change if path.exists() else plan.create).append(path.relative_to(root).as_posix())
     if gitignore_needs_entry(root):
         (plan.change if (root / ".gitignore").exists() else plan.create).append(".gitignore")
+    if old_notes(root):
+        plan.move.append(f"{OLD_NOTES_IGNORE} -> {NOTES_IGNORE}")
     if installed != current:
         plan.change.append(VERSION_FILE.as_posix())
     return plan
@@ -368,20 +436,13 @@ def cmd_update(args: argparse.Namespace) -> int:
     installed = version_path.read_text(encoding="utf-8").strip()
     current = package_version()
     if parse_version(installed) > parse_version(current) and not args.force:
-        raise PksError(f"This project has PKS {installed}, newer than this package ({current}). Nothing changed.")
-
-    if not is_git_repository(root):
-        print("Note: this is not a Git repository, so local changes to PKS skills cannot be detected.")
-    else:
-        dirty = uncommitted_skill_changes(root)
-        if dirty and not args.force:
-            listed = "\n".join(f"  {line}" for line in dirty)
-            raise PksError(
-                "Nothing changed. These PKS skill files have uncommitted changes:\n"
-                f"{listed}\nCommit or revert them, or re-run with --force to overwrite them."
-            )
+        raise PksError(
+            f"This project has PKS {installed}, newer than this package ({current}). Nothing changed. "
+            "Re-run with --force to use this package anyway."
+        )
 
     plan = update_plan(root, installed, current)
+    warn_about_repeated_rules(root)
     if plan.is_empty():
         print(f"PKS {current} is up to date in {root}.")
         return 0
@@ -400,9 +461,14 @@ def cmd_update(args: argparse.Namespace) -> int:
     for path, block in instruction_files(root):
         text = path.read_text(encoding="utf-8") if path.exists() else ""
         path.write_text(with_block(text, block), encoding="utf-8")
+    left = move_old_notes(root)
     if gitignore_needs_entry(root):
-        add_gitignore_entry(root)
+        update_gitignore(root)
     version_path.write_text(f"{current}\n", encoding="utf-8")
+    if left:
+        print(f"These notes stay in {OLD_NOTES_IGNORE}, because {NOTES_IGNORE} already has files with the same names:")
+        for path in left:
+            print(f"  ! {path}")
 
     print(f"PKS updated to {current}. `docs/` was not touched and nothing was committed.")
     changes = changes_since(installed, current)
@@ -486,7 +552,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     update = commands.add_parser("update", help="download the latest PKS and update a project; never touches docs/")
     add_shared(update)
-    update.add_argument("--force", action="store_true", help="overwrite local changes to PKS skills")
+    update.add_argument("--force", action="store_true", help="update even if the project has a newer PKS than this command")
     update.set_defaults(handler=cmd_update)
 
     view = commands.add_parser("view", help="read the project's docs/ in your browser; changes nothing")

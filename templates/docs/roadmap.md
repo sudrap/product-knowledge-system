@@ -1,6 +1,6 @@
 # Roadmap
 
-What is planned and why. Tasks and their status belong in a tracker, if the project uses one.
+What is planned and why: the direction, not a task list. Where the work stands now is in `PROJECT.md`.
 
 ## Now
 

@@ -11,8 +11,8 @@ Start only when the user asks or accepts your offer. Do not start on your own.
 
 ## Start
 
-1. List `.pks/brainstorms/`. If notes on this topic exist, read them, say where things stand, and continue from there.
-2. Otherwise create `.pks/brainstorms/YYYY-MM-DD-topic.md`. Git ignores this folder and it is outside `docs/`.
+1. List `.pks/notes/`. If notes on this topic exist, read them, say where things stand, and continue from there in the same file.
+2. Otherwise create `.pks/notes/YYYY-MM-DD-topic.md`. These are the working notes from `pks-capture`, in the format below. Git ignores this folder and it is outside `docs/`.
 3. Read what `docs/` already says about the topic. Tell the user in a few lines what applies or conflicts.
 
 ## Ask

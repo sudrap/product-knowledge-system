@@ -10,7 +10,13 @@
 
 ## Current state
 
-[unknown]
+Where the work stands now. Rewrite it in place and keep it to one screen. Finished work leaves it; Git keeps the history.
+
+**Updated:** [date]
+
+- **In progress:** [unknown]
+- **Next:** [unknown]
+- **Watch out:** [unknown]
 
 ## Unknowns
 
@@ -18,7 +24,7 @@
 
 ## Other locations
 
-Knowledge kept outside `docs/`. PKS links to read-only locations and never changes them.
+Knowledge kept outside `docs/`. PKS links to read-only locations and never changes them. Keep the others true when the work changes what they describe.
 
 | Location | What it holds | Read-only |
 | --- | --- | --- |

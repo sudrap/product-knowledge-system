@@ -1,8 +1,8 @@
 # Product Knowledge System (PKS)
 
-Keep a project's know-how in the project: ideas, brainstorms, decisions, the plan and why things are the way they are. Claude Code and Codex read and maintain the same plain Markdown in `docs/`, you can browse it yourself, and it travels with Git.
+Keep a project's know-how in the project: ideas, brainstorms, decisions, the plan, where the work stands and why things are the way they are. Claude Code and Codex read and maintain the same plain Markdown in `docs/`, you can browse it yourself, and it travels with Git.
 
-PKS is not a ticketing system and depends on none. If you use one, it keeps tracking tasks and progress; if you don't, the roadmap in `docs/` is enough.
+PKS is not a task tracker. It keeps the knowledge, the plan and where the work stands, so an agent in a new conversation can pick up where the last one stopped. Use any tracker alongside it, or none.
 
 ## Install
 
@@ -27,9 +27,9 @@ pks init
 It shows what it will create and asks first. It never overwrites anything and commits nothing. It adds:
 
 - the `pks-*` skills in `.claude/skills/` and `.agents/skills/`,
-- a short marked rule in `AGENTS.md`, imported from `CLAUDE.md`,
+- a short marked rule in `AGENTS.md`, imported from `CLAUDE.md` together with `docs/PROJECT.md`,
 - starter files in `docs/`,
-- `.pks/version` and a `.gitignore` entry for `.pks/brainstorms/`.
+- `.pks/version` and a `.gitignore` entry for the agent's working notes in `.pks/notes/`.
 
 Then start a new agent session in the project and run the setup:
 
@@ -48,8 +48,10 @@ Once the knowledge is in place, the agent turns off Claude's automatic memory fo
 Just work. Ask for `/pks-help` or `$pks-help` any time.
 
 - **"Write this down"** records something in `docs/` and shows you where.
-- **On its own**, the agent checks `docs/` before related work. At the end of a topic it asks once whether to record anything important. It does not write without you.
-- **"Let's brainstorm"** starts `pks-brainstorm`: one question at a time, with notes in `.pks/brainstorms/`, so you can continue in another conversation. At the end you decide what goes to `docs/`, and the notes are deleted.
+- **At the start** of a conversation the agent reads `docs/PROJECT.md`, including where the work stands, and tells you about unfinished notes from an earlier conversation.
+- **While working** it checks the related records in `docs/` first and keeps notes in `.pks/notes/`, outside Git, so nothing is lost if the conversation ends.
+- **At the end** of a block of work it offers one list of writes: where the work now stands, records the work made untrue, and anything important. Nothing goes to `docs/` without your yes.
+- **"Let's brainstorm"** starts `pks-brainstorm`: one question at a time, with notes in `.pks/notes/`, so you can continue in another conversation. At the end you decide what goes to `docs/`, and the notes are deleted.
 - **"Run an audit"** and **"go through the inbox"** run `pks-audit`, only when you ask.
 
 To read the documentation comfortably, run `pks view` in the project or ask the agent with `/pks-view` or `$pks-view`. It opens `docs/` in your browser, with all documents in a side panel and formatted text. It only reads, and it updates by itself when a document changes. Only this computer can reach it. Press Ctrl+C to stop it.
@@ -83,9 +85,9 @@ In each project, when you want to:
 pks update
 ```
 
-`pks update` downloads the latest PKS release, so you don't need the install command again. Then it replaces the `pks-*` skills and PKS's marked blocks in `AGENTS.md` and `CLAUDE.md`, and records the new version. It never touches `docs/` and commits nothing. It stops if the skills have uncommitted changes.
+`pks update` downloads the latest PKS release, so you don't need the install command again. Then it replaces the `pks-*` skills and PKS's marked blocks in `AGENTS.md` and `CLAUDE.md`, and records the new version. It never touches `docs/` and commits nothing.
 
-Your own workflows are safe if their names don't start with `pks-`.
+Skills named `pks-*` belong to PKS and `pks update` replaces them. Put your own changes in a skill with another name.
 
 ## Limits
 
