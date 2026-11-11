@@ -9,3 +9,7 @@
 ## Tech stack
 
 [unknown]
+
+## Code conventions
+
+[unknown]

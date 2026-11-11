@@ -49,7 +49,7 @@ Just work. Ask for `/pks-help` or `$pks-help` any time.
 
 - **"Write this down"** records something in `docs/` and shows you where.
 - **At the start** of a conversation the agent reads `docs/PROJECT.md`, including where the work stands, and tells you about unfinished notes from an earlier conversation.
-- **While working** it checks the related records in `docs/` first and keeps notes in `.pks/notes/`, outside Git, so nothing is lost if the conversation ends.
+- **While working** it checks the related records in `docs/` first, reads `docs/architecture.md` and `docs/development.md` before it writes or changes code, and keeps notes in `.pks/notes/`, outside Git, so nothing is lost if the conversation ends.
 - **At the end** of a block of work it offers one list of writes: where the work now stands, records the work made untrue, and anything important. Nothing goes to `docs/` without your yes.
 - **"Let's brainstorm"** starts `pks-brainstorm`: one question at a time, with notes in `.pks/notes/`, so you can continue in another conversation. At the end you decide what goes to `docs/`, and the notes are deleted.
 - **"Run an audit"** and **"go through the inbox"** run `pks-audit`, only when you ask.
@@ -63,9 +63,9 @@ docs/
 ├── PROJECT.md        # purpose, current state, unknowns, language, other locations
 ├── product.md        # vision, users, value, strategy
 ├── business.md       # monetization, pricing, competitors, metrics
-├── architecture.md   # structure and tech stack
+├── architecture.md   # structure, tech stack, code conventions
 ├── roadmap.md        # Now / Next / Later
-├── development.md    # build, run, debug, solved problems (when needed)
+├── development.md    # build, run, test, debug, solved problems (when needed)
 ├── discovery/        # ideas, brainstorms, research under consideration
 │   ├── inbox/        # new and unprocessed
 │   └── rejected/     # rejected, with the reason

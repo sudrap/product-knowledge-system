@@ -117,7 +117,7 @@ Compare what you found with what the documentation should cover:
 | `docs/PROJECT.md` | purpose, current state (in progress, next, watch out), other locations |
 | `docs/product.md` | vision, target users, value, strategy |
 | `docs/business.md` | monetization, pricing, competitors, metrics |
-| `docs/architecture.md` | structure, tech stack, reasons for the main choices |
+| `docs/architecture.md` | structure, tech stack, code conventions, reasons for the main choices |
 | `docs/roadmap.md` | Now, Next, Later, and why |
 | `docs/decisions/` | which decisions are really made, and why |
 
@@ -152,6 +152,7 @@ Say that the questions are finished and nothing has been written yet. Then lead 
    - every Claude memory file, with its destination: `docs/`, global instruction files, or leave it;
    - rules in `CLAUDE.md` that repeat `AGENTS.md`. Propose keeping shared rules only in `AGENTS.md` and leaving in `CLAUDE.md` only what is for Claude alone, plus the PKS block;
    - rules in instruction files that point to material being migrated, or that PKS now covers, such as "read this first" or "update the docs in the same change". Propose removing them or pointing them to `docs/`;
+   - knowledge about the code in instruction files, such as conventions, layers, naming and how to test. Propose moving it to `docs/architecture.md` or `docs/development.md`;
    - locations to treat as read-only;
    - secret-looking files.
 4. **Go-ahead.** Say in a few lines what happens on yes: the files get written, existing files stay as agreed, Claude's automatic memory is turned off for this project because everything now lives in `docs/`, and nothing is committed.
@@ -178,8 +179,8 @@ C. Add something
 
 - `docs/PROJECT.md`: purpose, the current state in the form from `pks-capture` (updated, in progress, next, watch out), unknowns, language, and the "Other locations" table with read-only marks. Mark a document outside `docs/` that describes the project, such as a user guide, as not read-only, so it is kept true.
 - `docs/product.md` and `docs/business.md`: what the project and the interview established.
-- `docs/architecture.md`: an overview and the tech stack, not implementation details that can be read from the code.
-- `docs/development.md`: only if there is something to say about building, running, debugging or solved problems, or a pointer to a design system.
+- `docs/architecture.md`: an overview, the tech stack and the code conventions, not implementation details that can be read from the code.
+- `docs/development.md`: only if there is something to say about building, running, testing, debugging or solved problems, or a pointer to a design system.
 - `docs/roadmap.md`: the direction and the reasons, not a task list.
 - `docs/decisions/` and `docs/decisions/proposed/`: as agreed in the review. Use the record format in the layout reference.
 

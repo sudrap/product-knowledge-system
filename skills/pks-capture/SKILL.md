@@ -21,7 +21,7 @@ Notes in `.pks/notes/` keep a conversation's knowledge until the user decides wh
 - One file per topic, `.pks/notes/YYYY-MM-DD-topic.md`, so parallel conversations do not overwrite each other. Continue an existing file on the same topic.
 - Keep them short: decisions and why, open questions, where you stopped, the next step. No transcript and no secrets.
 - Name the file once, at the first write.
-- At the start of a conversation, if notes exist, say so in one line and ask: continue / move to `docs/` / delete.
+- At the start of a conversation, if notes exist, say so in one line. Ask continue / move to `docs/` / delete only when they concern the task or the user asks, because another conversation may still be using them.
 - Delete a file only after the user has decided about its content.
 
 ## Keep records true
@@ -53,6 +53,7 @@ What belongs in the list:
 - **The current state**, whenever the work changed it: something finished, started or was left half-done, or a new trap or unverified point appeared.
 - **Records the work made untrue**, from the check above.
 - **New knowledge that matters:** would someone miss it in a month, and can it not be read from the code? That covers product, business and architectural decisions, conclusions, and ideas the user clearly stands behind. It does not cover passing thoughts or implementation details. This test applies only to new knowledge you offer, never to the state, to keeping records true, or to what the user tells you to write.
+- **A code convention the work set**, such as a layer, a naming rule or how to test. Offer it for `docs/architecture.md` or `docs/development.md`, even though the code shows it: it is a rule for code not written yet.
 - **A rule for agents** that seems to belong in `AGENTS.md`. Offer it here; never write it there without a yes.
 
 How to ask:
@@ -76,11 +77,11 @@ How to ask:
 | Purpose, unknowns, other locations | `docs/PROJECT.md` |
 | Vision, users, strategy | `docs/product.md` |
 | Pricing, competitors, metrics | `docs/business.md` |
-| Structure, tools and libraries in use | `docs/architecture.md` |
-| How to build, run, debug; solved problems | `docs/development.md` (create it when first needed) |
+| Structure, tools and libraries in use, code conventions (layers, naming) | `docs/architecture.md` |
+| How to build, run, test, debug; solved problems | `docs/development.md` (create it when first needed) |
 | What is planned and why | `docs/roadmap.md` |
 | What a feature should do | `docs/features/` |
-| A rule for agents in this project | `AGENTS.md`, only when the user says so |
+| A rule for how agents work in this project, not knowledge about the code | `AGENTS.md`, only when the user says so |
 | A rule for all the user's projects | `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, only when the user says so |
 
 Never change locations marked read-only in `docs/PROJECT.md`. Never write secrets.

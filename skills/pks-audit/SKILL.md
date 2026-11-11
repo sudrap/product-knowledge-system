@@ -17,7 +17,7 @@ Go through `docs/` and compare it with the code and Git history where that helps
 - **Contradictions:** between product, roadmap and decisions.
 - **Waiting:** records in `docs/decisions/proposed/` and unprocessed `docs/discovery/inbox/`.
 - **Ready to plan:** ideas and decisions concrete enough to become a story, each with a one-line reason.
-- **Upkeep:** broken links, duplicates, leftover notes in `.pks/notes/`, rules repeated in `CLAUDE.md` and `AGENTS.md`, files long enough to be worth splitting.
+- **Upkeep:** broken links, duplicates, leftover notes in `.pks/notes/`, rules repeated in `CLAUDE.md` and `AGENTS.md`, knowledge about the code kept in `AGENTS.md` instead of `docs/`, files long enough to be worth splitting.
 - **Unknowns:** `[unknown]` items that now have an answer in the project.
 
 End with a short list of proposed changes and ask which to apply.

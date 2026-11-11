@@ -37,9 +37,9 @@ Folders appear when they first hold something. There are no index files: the rul
 | `docs/PROJECT.md` | purpose, current state (updated, in progress, next, watch out), unknowns, documentation language, other locations and which are read-only |
 | `docs/product.md` | vision, target users, value, strategy |
 | `docs/business.md` | monetization, pricing, competitors, metrics |
-| `docs/architecture.md` | structure and tech stack, not details that can be read from the code |
+| `docs/architecture.md` | structure, tech stack and code conventions (layers, naming), not details that can be read from the code |
 | `docs/roadmap.md` | the direction and the reasons, as Now / Next / Later; not a task list |
-| `docs/development.md` | how to build, run and debug, solved problems, pointers to design systems |
+| `docs/development.md` | how to build, run, test and debug, solved problems, pointers to design systems |
 | `docs/discovery/` | ideas under consideration, brainstorm results, hypotheses, research |
 | `docs/decisions/` | valid product, business and technical decisions |
 | `docs/features/` | what a feature should do, when worth recording |
@@ -48,7 +48,7 @@ A long file can be split later, for example `docs/product.md` into `docs/product
 
 **Working notes:** `.pks/notes/` holds the agent's notes per topic until the user decides what goes to `docs/`. They are never the record.
 
-**Instruction files:** shared rules live only in `AGENTS.md`. `CLAUDE.md` imports it and keeps only what is for Claude alone.
+**Instruction files:** shared rules live only in `AGENTS.md`. `CLAUDE.md` imports it and keeps only what is for Claude alone. Knowledge about the code, such as conventions and how to test, lives in `docs/`, not in `AGENTS.md`.
 
 **Other material:** existing folders such as a design folder stay where they are. `docs/` links to them.
 

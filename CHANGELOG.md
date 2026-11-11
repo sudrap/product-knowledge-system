@@ -2,6 +2,16 @@
 
 Mark a version that changes the `docs/` structure with `[docs-structure]`. `pks update` then tells people to run `pks-setup`.
 
+## 1.7.0
+
+Knowledge about the code now lives in `docs/`, and the agent reads it before it touches code.
+
+- `docs/architecture.md` also holds the code conventions, such as layers and naming, and `docs/development.md` says how to test. They no longer belong in `AGENTS.md`. A new project gets a "Code conventions" section. In an existing project, ask the agent to move them there.
+- Before writing or changing code, the agent reads `docs/architecture.md` and `docs/development.md`, not only before changing structure.
+- At the end of a block of work, the agent offers a code convention the work set for `docs/`, even though the code shows it.
+- `pks-setup` proposes moving knowledge about the code from instruction files to `docs/`, and `pks-audit` reports it.
+- At the start of a conversation the agent still mentions unfinished notes, but asks what to do with them only when they concern the task or you ask. Another conversation may still be using them.
+
 ## 1.6.0
 
 PKS now keeps where the work stands, so an agent in a new conversation picks up where the last one stopped, with or without a tracker.

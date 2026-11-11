@@ -11,8 +11,8 @@ Show this briefly, in the user's language, and adapt the invocation to the tool:
 
 **Works by itself**
 
-- At the start of a conversation the agent reads `docs/PROJECT.md`, including where the work stands, and tells you about notes left from an earlier conversation.
-- Before any work, and on questions, it checks the related records in `docs/` and tells you when something applies or conflicts.
+- At the start of a conversation the agent reads `docs/PROJECT.md`, including where the work stands, and mentions notes left from another conversation.
+- Before any work, and on questions, it checks the related records in `docs/` and tells you when something applies or conflicts. Before it writes or changes code, it reads `docs/architecture.md` and `docs/development.md`.
 - While working it keeps notes in `.pks/notes/`, so nothing is lost if the conversation ends.
 - At the end of a block of work it offers one list of writes: the current state, records the work made untrue, and anything important. Nothing goes to `docs/` without your yes.
 - When a longer product discussion has no conclusion, the agent offers once to turn it into a brainstorm.
