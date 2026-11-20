@@ -25,6 +25,8 @@ NOTES_DIR = Path(".pks/notes")
 NOTES_IGNORE = ".pks/notes/"
 OLD_NOTES_DIR = Path(".pks/brainstorms")
 OLD_NOTES_IGNORE = ".pks/brainstorms/"
+CHANGELOG_TEMPLATE = "changelog.md"
+ROOT_CHANGELOG = Path("CHANGELOG.md")
 MIN_REPEATED_PARAGRAPH = 40
 BLOCK = re.compile(r"<!-- PKS:START -->.*?<!-- PKS:END -->\n?", re.DOTALL)
 SKIPPED_NAMES = {"__pycache__", ".DS_Store"}
@@ -274,6 +276,23 @@ def confirm(assume_yes: bool) -> None:
         raise PksError("\nNothing changed.")
 
 
+def existing_doc(root: Path, template: Path) -> Path | None:
+    """Find what a docs template would replace; a changelog in the root stands in for docs/changelog.md."""
+    found = existing_path(root, Path("docs") / template.name)
+    if found is None and template.name == CHANGELOG_TEMPLATE:
+        found = existing_path(root, ROOT_CHANGELOG)
+    return found
+
+
+def project_template(root: Path, template: Path) -> str:
+    """Return a docs template; PROJECT.md names a changelog the project already has in its root."""
+    text = template.read_text(encoding="utf-8")
+    root_changelog = existing_path(root, ROOT_CHANGELOG)
+    if template.name == "PROJECT.md" and root_changelog is not None:
+        text = text.replace(f"`docs/{CHANGELOG_TEMPLATE}`", f"`{root_changelog.relative_to(root).as_posix()}`")
+    return text
+
+
 def init_plan(root: Path) -> Plan:
     plan = Plan()
     for skills_dir in TOOL_SKILL_DIRS:
@@ -281,7 +300,7 @@ def init_plan(root: Path) -> Plan:
     plan.create.append(VERSION_FILE.as_posix())
     for template in sorted((TEMPLATES / "docs").glob("*.md")):
         relative = Path("docs") / template.name
-        existing = existing_path(root, relative)
+        existing = existing_doc(root, template)
         if existing is None:
             plan.create.append(relative.as_posix())
         else:
@@ -333,10 +352,10 @@ def cmd_init(args: argparse.Namespace) -> int:
             copy_skill(skill, root / skills_dir / skill.name)
     for template in sorted((TEMPLATES / "docs").glob("*.md")):
         relative = Path("docs") / template.name
-        if existing_path(root, relative) is None:
+        if existing_doc(root, template) is None:
             target = root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(template, target)
+            target.write_text(project_template(root, template), encoding="utf-8")
     for path, block in instruction_files(root):
         text = path.read_text(encoding="utf-8") if path.exists() else ""
         path.write_text(with_block(text, block), encoding="utf-8")

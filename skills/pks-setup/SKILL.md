@@ -88,7 +88,7 @@ Ask only these:
 
 From the second question on, always offer "End here" as one of the four answers, which leaves room for two concrete ones. It ends the interview, and everything not yet answered stays `[unknown]`.
 
-Write what the user said, close to their wording: `docs/PROJECT.md`, `docs/product.md`, `docs/roadmap.md`, and anything else where the layout says it belongs. Leave the rest as `[unknown]`. Then continue with "Turn off tool memory".
+Write what the user said, close to their wording: `docs/PROJECT.md`, `docs/product.md`, `docs/roadmap.md`, and anything else where the layout says it belongs. Leave the rest as `[unknown]`, including "Releases": the agent asks about it at the first merge. Then continue with "Turn off tool memory".
 
 ## Full path
 
@@ -120,6 +120,7 @@ Compare what you found with what the documentation should cover:
 | `docs/architecture.md` | structure, tech stack, code conventions, reasons for the main choices |
 | `docs/roadmap.md` | Now, Next, Later, and why |
 | `docs/decisions/` | which decisions are really made, and why |
+| "Releases" in `docs/PROJECT.md` | what counts as a release, where the changelog is, and whether the agent writes it or only proposes it |
 
 Ask at most ten questions in total. Ask nothing the project answers clearly and nothing that can be read from the code. From the rest, pick what would mislead later work if guessed wrong: usually who the project is for, what it aims at, what comes next, whether it should earn money, conflicts between sources, and important decisions that are unclear.
 
@@ -136,6 +137,11 @@ After the language question:
 1. Give your summary of the project in a few lines and ask whether it is right. A correction can change the list.
 2. Ask whether a tracker, wiki or other source exists for this project. Read what the user names, limited to this project and with whatever access you have, before going on. It may answer other questions.
 3. Ask the rest, starting with what other answers depend on.
+4. Ask about releases in two questions:
+   - **What counts as a release:** recommend what the project shows, such as a build in TestFlight and Google Play from a release script, a published package or a Git tag. Offer "Every merge is deployed" where that fits, and "Does not apply" for a project that is never released, which keeps no changelog.
+   - **Who writes the changelog:** "The agent writes it" (recommended: it records facts, and you see each line in the commit) or "The agent only proposes it at the end of a block of work". Skip this one after "Does not apply".
+
+   If the project already has a changelog, such as `CHANGELOG.md` in its root or one per package, say that PKS keeps using it as it is, and whether a tool generates it.
 
 Do not offer "End here". If the user asks to stop, stop and say what is left: those items stay `[unknown]`. Ask whether to go on to the review or to continue later.
 
@@ -177,11 +183,12 @@ C. Add something
 
 ### 5. Write what was approved
 
-- `docs/PROJECT.md`: purpose, the current state in the form from `pks-capture` (updated, in progress, next, watch out), unknowns, language, and the "Other locations" table with read-only marks. Mark a document outside `docs/` that describes the project, such as a user guide, as not read-only, so it is kept true.
+- `docs/PROJECT.md`: purpose, the current state in the form from `pks-capture` (updated, in progress, next, watch out), releases, unknowns, language, and the "Other locations" table with read-only marks. Mark a document outside `docs/` that describes the project, such as a user guide, as not read-only, so it is kept true.
 - `docs/product.md` and `docs/business.md`: what the project and the interview established.
 - `docs/architecture.md`: an overview, the tech stack and the code conventions, not implementation details that can be read from the code.
 - `docs/development.md`: only if there is something to say about building, running, testing, debugging or solved problems, or a pointer to a design system.
 - `docs/roadmap.md`: the direction and the reasons, not a task list.
+- "Releases" in `docs/PROJECT.md` and the changelog, in the format from `pks-capture`. Use the project's own changelog if it has one, in its own format, and leave a generated one as it is. Otherwise fill `docs/changelog.md`: if the project has been released before, add the latest release as a heading, from tags, release notes or what the user says, and list what was merged into the main branch since then under Unreleased. Older history stays in Git. After "Does not apply", delete the empty `docs/changelog.md` that `pks init` created.
 - `docs/decisions/` and `docs/decisions/proposed/`: as agreed in the review. Use the record format in the layout reference.
 
 ### 6. Verify

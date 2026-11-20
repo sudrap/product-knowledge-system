@@ -15,6 +15,7 @@ Go through `docs/` and compare it with the code and Git history where that helps
 
 - **Outdated:** statements the project no longer matches, including documents outside `docs/` that `docs/PROJECT.md` lists as not read-only, and a stale current state or roadmap.
 - **Contradictions:** between product, roadmap and decisions.
+- **Changelog:** user-visible merges into the main branch missing from it, lines under Unreleased that a release already contains, a release tag with no heading, a missing or `[unknown]` "Releases" in `docs/PROJECT.md`, and released work listed there.
 - **Waiting:** records in `docs/decisions/proposed/` and unprocessed `docs/discovery/inbox/`.
 - **Ready to plan:** ideas and decisions concrete enough to become a story, each with a one-line reason.
 - **Upkeep:** broken links, duplicates, leftover notes in `.pks/notes/`, rules repeated in `CLAUDE.md` and `AGENTS.md`, knowledge about the code kept in `AGENTS.md` instead of `docs/`, files long enough to be worth splitting.

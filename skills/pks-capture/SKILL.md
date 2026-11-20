@@ -1,11 +1,11 @@
 ---
 name: pks-capture
-description: Record project knowledge in docs/ and keep it true. Use when the user asks to write down or remember something ("zapiš to", "zapamatuj si", "write this down"), at the end of a block of work, when the work changed the project's state or made a record untrue, or when asked what is worth recording.
+description: Record project knowledge in docs/ and keep it true, including the changelog of what is merged and released. Use when the user asks to write down or remember something ("zapiš to", "zapamatuj si", "write this down"), at the end of a block of work, when something is merged into the main branch or released, when the work changed the project's state or made a record untrue, or when asked what is worth recording.
 ---
 
 # PKS capture
 
-Keep the project's know-how in `docs/` true and complete, without interrupting the user and without writing to `docs/` behind their back.
+Keep the project's know-how in `docs/` true and complete, without interrupting the user and without writing to `docs/` behind their back. The changelog is the one exception: it records facts, so you keep it yourself.
 
 ## The user tells you to write
 
@@ -55,6 +55,7 @@ What belongs in the list:
 - **New knowledge that matters:** would someone miss it in a month, and can it not be read from the code? That covers product, business and architectural decisions, conclusions, and ideas the user clearly stands behind. It does not cover passing thoughts or implementation details. This test applies only to new knowledge you offer, never to the state, to keeping records true, or to what the user tells you to write.
 - **A code convention the work set**, such as a layer, a naming rule or how to test. Offer it for `docs/architecture.md` or `docs/development.md`, even though the code shows it: it is a rule for code not written yet.
 - **A rule for agents** that seems to belong in `AGENTS.md`. Offer it here; never write it there without a yes.
+- **Changelog lines**, only when "Releases" in `docs/PROJECT.md` says the agent proposes them or does not say yet. Otherwise they are already written.
 
 How to ask:
 
@@ -80,6 +81,8 @@ How to ask:
 | Structure, tools and libraries in use, code conventions (layers, naming) | `docs/architecture.md` |
 | How to build, run, test, debug; solved problems | `docs/development.md` (create it when first needed) |
 | What is planned and why | `docs/roadmap.md` |
+| What is merged and what is released | the changelog (see below) |
+| What counts as a release, where the changelog is, who writes it | "Releases" in `docs/PROJECT.md` |
 | What a feature should do | `docs/features/` |
 | A rule for how agents work in this project, not knowledge about the code | `AGENTS.md`, only when the user says so |
 | A rule for all the user's projects | `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`, only when the user says so |
@@ -101,6 +104,85 @@ Never change locations marked read-only in `docs/PROJECT.md`. Never write secret
 ```
 
 If the section still has an older form, bring it to this one when you first update it.
+
+## Changelog
+
+The changelog answers two questions without anyone keeping watch: what is merged into the main branch, and what is already out.
+
+### Releases in `docs/PROJECT.md`
+
+"Releases" says three things:
+
+- **Release:** what counts as one, such as a build in TestFlight and Google Play, a published package or a Git tag. "Every merge is deployed" is an answer too, and "Does not apply" means no changelog is kept.
+- **Changelog:** the file, usually `docs/changelog.md`, or the project's own, such as `CHANGELOG.md` in the root. In a monorepo with a changelog per package, it lists them; write to the one the change belongs to.
+- **Written by:** the agent on its own, or the agent proposes it.
+
+If the section is missing or `[unknown]`, ask once, at the first merge or release: what counts as a release, and whether you write the changelog on your own or only propose it. Recommend writing it: it records facts, and the user sees every line in the commit. Offer to record the answers there. Until then, only propose.
+
+Never start a second changelog: if the section is missing and the root has `CHANGELOG.md`, use that.
+
+### Format
+
+One line per change, as a user sees it, with the ticket key when the work has one. Only what is merged into the main branch; a pushed or unfinished branch does not count. Leave out tests, refactoring, documentation and other internal work. Write in the language stated in `docs/PROJECT.md`, headings included.
+
+```markdown
+# Changelog
+
+## [Unreleased]
+
+### Added
+- Play on several phones at once (CH-42)
+- Nominations (CH-57) — still to ship on Android
+
+### Fixed
+- Android: the back gesture no longer ends the game (CH-88)
+
+## [3.0.0] - 2026-11-20
+
+iOS build 45 (TestFlight) · commit `abc1234` · App Store 2026-11-25
+
+### Added
+- Nominations (CH-57)
+```
+
+- Group the lines under `Added`, `Changed`, `Fixed` and `Removed`, and leave out empty groups.
+- The heading holds the version and the date, so tools that read Keep a Changelog still work. The line under it says what went out: the build per platform and its channel, then the commit it was built from.
+- In a project for more than one platform, start a line that concerns only one of them with its name, as "Android:" above. A project for one platform needs no names.
+- When every merge is deployed, there is no Unreleased: each deployment gets a heading with its date, and its line has the commit.
+- If the project's changelog already exists and is written by hand, keep its format, headings and language, and add an Unreleased section only if it has none.
+- If it is generated by a tool, such as release-please, changesets or git-cliff, never edit it by hand. Record the change the tool's way, such as the commit message or a changeset file.
+
+### When a branch is merged
+
+- **You merge it into the main branch yourself:** write the line on the main branch, in the merge or a commit right after it, not on the branch, so parallel branches do not clash in the same place. It is pushed together with the merge, never on its own.
+- **It goes through a pull request, or the main branch cannot be committed to:** add the line as the branch's last commit before the merge. When Unreleased conflicts, keep both sides.
+- **It was merged without you:** the catch-up below adds it.
+
+### When a release goes out
+
+Move the lines the release contains from Unreleased under a new heading, and add the line with builds, channels and the commit. Commit it with the release change, such as the version bump, or on its own right after.
+
+When the platforms ship at different times, say iOS first:
+
+- A line for both platforms goes under the new heading and also stays in Unreleased, marked "still to ship on Android".
+- A line only for iOS moves; a line only for Android stays.
+- When Android ships **the same version**, add its build to that heading's line, move the Android-only lines it contains under that heading, and delete the marked lines from Unreleased.
+- When Android ships **a different version**, give it its own heading, and move both the marked lines, without the mark, and the Android-only lines under it.
+
+When a tested build later goes out to the store, add the store and the date to its heading's line. It is not a new release.
+
+### Catching up
+
+Before you write, check what is missing, and mention in one line what you added.
+
+- **The starting point** is the commit in the latest release's line, otherwise the latest release tag, otherwise the commit that added the changelog.
+- **Merges:** go through the main branch since then with `git log --first-parent`, and add every user-visible change that is missing. A squash merge counts as one change.
+- **Releases:** a release tag or version newer than the top heading means a release went out without you. Ask what it contained before you write its heading.
+- **A new changelog:** when you create one in a project that has been released before, ask what the latest release was, or take the latest tag, so the changes merged since then are not lost.
+
+### Who writes it
+
+As "Written by" says. On your own: write it and commit it with the change, as above. Proposes: put the lines in the closing list instead. Either way, `docs/PROJECT.md` never lists what was released; the current state links to the changelog when it helps.
 
 ## Record format
 
@@ -147,7 +229,7 @@ If a longer product, business or architecture discussion is going nowhere conclu
 
 ## Git
 
-Do not commit on your own. When something was written, offer the commit at the end of a block of work, not after every write.
+Do not commit on your own, except the changelog as described above. When something was written, offer the commit at the end of a block of work, not after every write.
 
 - New knowledge gets its own commit, without code.
 - A fix to a record that a code change made untrue goes into the same commit as that code change, so a revert takes the description back with it.

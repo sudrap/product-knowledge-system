@@ -19,6 +19,7 @@ project/
     ├── architecture.md
     ├── roadmap.md
     ├── development.md        # created when first needed
+    ├── changelog.md          # merged and released, unless the project keeps its own changelog
     ├── discovery/
     │   ├── inbox/
     │   └── rejected/
@@ -34,12 +35,13 @@ Folders appear when they first hold something. There are no index files: the rul
 
 | Location | Holds |
 | --- | --- |
-| `docs/PROJECT.md` | purpose, current state (updated, in progress, next, watch out), unknowns, documentation language, other locations and which are read-only |
+| `docs/PROJECT.md` | purpose, current state (updated, in progress, next, watch out), releases (what counts as one, where the changelog is, who writes it), unknowns, documentation language, other locations and which are read-only |
 | `docs/product.md` | vision, target users, value, strategy |
 | `docs/business.md` | monetization, pricing, competitors, metrics |
 | `docs/architecture.md` | structure, tech stack and code conventions (layers, naming), not details that can be read from the code |
 | `docs/roadmap.md` | the direction and the reasons, as Now / Next / Later; not a task list |
 | `docs/development.md` | how to build, run, test and debug, solved problems, pointers to design systems |
+| `docs/changelog.md` | what is merged into the main branch and not released yet, then every release, as users see it; the agent keeps it. A changelog the project already has, such as `CHANGELOG.md` in the root, takes its place |
 | `docs/discovery/` | ideas under consideration, brainstorm results, hypotheses, research |
 | `docs/decisions/` | valid product, business and technical decisions |
 | `docs/features/` | what a feature should do, when worth recording |

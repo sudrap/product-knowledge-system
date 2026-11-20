@@ -3,12 +3,13 @@
 
 Know-how lives in `docs/`. At the start of every conversation, read `docs/PROJECT.md` unless it is already loaded, and list `.pks/notes/`. If notes are there, say so in one line. Ask whether to continue from them, move them to `docs/`, or delete them only when they concern the task or the user asks. Beyond that, read only what the task needs, never all of it:
 
-- `docs/PROJECT.md`: purpose, current state, unknowns, other locations
+- `docs/PROJECT.md`: purpose, current state, releases, unknowns, other locations
 - `docs/product.md`: vision, users, strategy
 - `docs/business.md`: pricing, competitors, metrics
 - `docs/architecture.md`: structure, tech stack and code conventions
 - `docs/roadmap.md`: what is planned and why
 - `docs/development.md`: build, run, test, debug, solved problems
+- `docs/changelog.md`: what is merged and what is released, unless `docs/PROJECT.md` names another file
 - `docs/decisions/`: valid decisions; `proposed/` await confirmation, `superseded/` were replaced
 - `docs/discovery/`: ideas under consideration; `inbox/` unprocessed, `rejected/` rejected
 - `docs/features/`: feature specifications
@@ -17,7 +18,9 @@ Some of these appear only once they hold content. List a folder and open records
 
 While you work, keep notes on your own in `.pks/notes/YYYY-MM-DD-topic.md`: decisions and why, open questions, where you stopped, the next step. A new topic gets a new file, so parallel conversations do not mix. Start the file at the first change, decision or finding, even in a short task, so nothing is lost if the conversation ends. Git ignores the folder. After changing behaviour, structure or how the project is built and run, check the records that describe it.
 
-When told to write or remember something, write it to `docs/`, never to tool memory, and show where. Otherwise do not write to `docs/` on your own. At the end of a block of work, offer one list of every write the work needs, one line per item saying what and where: the current state in `docs/PROJECT.md` when it changed, records the work made untrue, and new knowledge that matters. Ask once: yes / no / show the exact wording / change something, and offer the commit in the same question. The `pks-capture` skill has the details.
+When told to write or remember something, write it to `docs/`, never to tool memory, and show where. Apart from the changelog, do not write to `docs/` on your own. At the end of a block of work, offer one list of every write the work needs, one line per item saying what and where: the current state in `docs/PROJECT.md` when it changed, records the work made untrue, and new knowledge that matters. Ask once: yes / no / show the exact wording / change something, and offer the commit in the same question. The `pks-capture` skill has the details.
+
+Keep the changelog of what is merged into the main branch and what is released, following the `pks-capture` skill, whenever you merge a branch, prepare one for a pull request, or a release goes out. "Releases" in `docs/PROJECT.md` says where it is, what counts as a release, and whether you write it on your own or only propose it. If it does not say, ask once at the first merge.
 
 When asked to brainstorm, follow the `pks-brainstorm` skill. Do not start one on your own: if a longer product, business or architecture discussion has no conclusion, offer it once.
 

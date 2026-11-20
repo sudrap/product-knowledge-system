@@ -14,7 +14,8 @@ Show this briefly, in the user's language, and adapt the invocation to the tool:
 - At the start of a conversation the agent reads `docs/PROJECT.md`, including where the work stands, and mentions notes left from another conversation.
 - Before any work, and on questions, it checks the related records in `docs/` and tells you when something applies or conflicts. Before it writes or changes code, it reads `docs/architecture.md` and `docs/development.md`.
 - While working it keeps notes in `.pks/notes/`, so nothing is lost if the conversation ends.
-- At the end of a block of work it offers one list of writes: the current state, records the work made untrue, and anything important. Nothing goes to `docs/` without your yes.
+- When something is merged into the main branch, it adds a line to the changelog, and when a release goes out, it moves those lines under the new version with its builds and date. If one platform ships first, what still waits for the other stays marked. "Releases" in `docs/PROJECT.md` says what counts as a release, where the changelog is, and whether the agent writes it or only proposes it; if it does not say, the agent asks at the first merge.
+- At the end of a block of work it offers one list of writes: the current state, records the work made untrue, and anything important. Apart from the changelog, nothing goes to `docs/` without your yes.
 - When a longer product discussion has no conclusion, the agent offers once to turn it into a brainstorm.
 
 **Just say it**
@@ -25,6 +26,7 @@ Show this briefly, in the user's language, and adapt the invocation to the tool:
 | "Let's brainstorm", "pojďme brainstormovat" | The agent asks one question at a time and keeps notes in `.pks/notes/`, so you can continue in another conversation (`pks-brainstorm`) |
 | "Put it on the roadmap", "dej to do roadmapy" | Recorded in `docs/roadmap.md` (`pks-capture`) |
 | "Where did we stop?", "co je rozdělané" | Answered from the current state in `docs/PROJECT.md` and the notes in `.pks/notes/` |
+| "What is out?", "co je venku", "co je sloučené" | Answered from the changelog named in `docs/PROJECT.md` |
 | "What are we planning?" | Answered from `docs/roadmap.md` |
 | "What did we decide about X?" | Answered from `docs/decisions/` |
 | "Go through the inbox", "projdi inbox" | Proposals for each new idea (`pks-audit`) |
@@ -35,4 +37,4 @@ Show this briefly, in the user's language, and adapt the invocation to the tool:
 
 **Terminal commands:** `pks init` installs PKS into a project. `pks update` downloads the latest release, updates the project and never touches `docs/`. Both only change files; committing is up to you. `pks view` shows `docs/` in your browser and changes nothing. `pks uninstall` removes the command from this computer; projects stay as they are.
 
-**Where things are:** `PROJECT.md`, `product.md`, `business.md`, `architecture.md`, `roadmap.md` and, once needed, `development.md`, plus `discovery/`, `decisions/` and `features/`. In `discovery/` and `decisions/`, what is current sits directly in the folder; subfolders hold what is waiting or finished. Working notes are in `.pks/notes/`, outside Git. The project's rules for agents are in `AGENTS.md`; `CLAUDE.md` only imports them.
+**Where things are:** `PROJECT.md`, `product.md`, `business.md`, `architecture.md`, `roadmap.md`, `changelog.md` and, once needed, `development.md`, plus `discovery/`, `decisions/` and `features/`. In `discovery/` and `decisions/`, what is current sits directly in the folder; subfolders hold what is waiting or finished. Working notes are in `.pks/notes/`, outside Git. The project's rules for agents are in `AGENTS.md`; `CLAUDE.md` only imports them.
