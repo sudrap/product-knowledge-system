@@ -55,7 +55,7 @@ What belongs in the list:
 - **New knowledge that matters:** would someone miss it in a month, and can it not be read from the code? That covers product, business and architectural decisions, conclusions, and ideas the user clearly stands behind. It does not cover passing thoughts or implementation details. This test applies only to new knowledge you offer, never to the state, to keeping records true, or to what the user tells you to write.
 - **A code convention the work set**, such as a layer, a naming rule or how to test. Offer it for `docs/architecture.md` or `docs/development.md`, even though the code shows it: it is a rule for code not written yet.
 - **A rule for agents** that seems to belong in `AGENTS.md`. Offer it here; never write it there without a yes.
-- **Changelog lines**, only when "Releases" in `docs/PROJECT.md` says the agent proposes them or does not say yet. Otherwise they are already written.
+- **Changelog lines**, only when "Releases" in `docs/PROJECT.md` says the agent proposes them. Otherwise they are already written.
 
 How to ask:
 
@@ -117,7 +117,7 @@ The changelog answers two questions without anyone keeping watch: what is merged
 - **Changelog:** the file, usually `docs/changelog.md`, or the project's own, such as `CHANGELOG.md` in the root. In a monorepo with a changelog per package, it lists them; write to the one the change belongs to.
 - **Written by:** the agent on its own, or the agent proposes it.
 
-If the section is missing or `[unknown]`, ask once, at the first merge or release: what counts as a release, and whether you write the changelog on your own or only propose it. Recommend writing it: it records facts, and the user sees every line in the commit. Offer to record the answers there. Until then, only propose.
+If the section is missing or `[unknown]`, ask once, at the first merge or release: what counts as a release, and whether you write the changelog on your own or only propose it. Recommend writing it: it records facts, and the user sees every line in the commit. Offer to record the answers there. Until then, write it on your own, creating `docs/changelog.md` from the format below if it is missing.
 
 Never start a second changelog: if the section is missing and the root has `CHANGELOG.md`, use that.
 

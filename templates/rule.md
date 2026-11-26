@@ -20,7 +20,7 @@ While you work, keep notes on your own in `.pks/notes/YYYY-MM-DD-topic.md`: deci
 
 When told to write or remember something, write it to `docs/`, never to tool memory, and show where. Apart from the changelog, do not write to `docs/` on your own. At the end of a block of work, offer one list of every write the work needs, one line per item saying what and where: the current state in `docs/PROJECT.md` when it changed, records the work made untrue, and new knowledge that matters. Ask once: yes / no / show the exact wording / change something, and offer the commit in the same question. The `pks-capture` skill has the details.
 
-Keep the changelog of what is merged into the main branch and what is released, following the `pks-capture` skill, whenever you merge a branch, prepare one for a pull request, or a release goes out. "Releases" in `docs/PROJECT.md` says where it is, what counts as a release, and whether you write it on your own or only propose it. If it does not say, ask once at the first merge.
+Keep the changelog of what is merged into the main branch and what is released, following the `pks-capture` skill, whenever you merge a branch, prepare one for a pull request, or a release goes out, whichever skill, script or instruction does it. "Releases" in `docs/PROJECT.md` says where it is, what counts as a release, and whether you write it on your own or only propose it. If it does not say, keep `docs/changelog.md` on your own anyway, creating it if needed, and ask once to record "Releases".
 
 When asked to brainstorm, follow the `pks-brainstorm` skill. Do not start one on your own: if a longer product, business or architecture discussion has no conclusion, offer it once.
 

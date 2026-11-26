@@ -446,6 +446,39 @@ def download_latest_release(dry_run: bool) -> None:
     os.execv(sys.executable, [sys.executable, str(PACKAGE_ROOT / "bin" / "pks"), *sys.argv[1:]])
 
 
+def missing_changelog_setup(root: Path) -> list[str]:
+    """Say what keeps the changelog from being kept, from "Releases" in docs/PROJECT.md.
+
+    Headings follow the documentation language, so the section counts as present when
+    PROJECT.md mentions a changelog at all; Czech docs that never use the word get the
+    warning anyway. Once the section exists, the file it names is the agent's to create.
+    Only reads; `docs/` belongs to the user.
+    """
+    project = existing_path(root, Path("docs/PROJECT.md"))
+    if project is None or not project.is_file():
+        return []
+    try:
+        text = project.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    if "changelog" in text.casefold():
+        return []
+    missing = ['docs/PROJECT.md has no "Releases" section']
+    if existing_doc(root, Path(CHANGELOG_TEMPLATE)) is None:
+        missing.append(f"docs/{CHANGELOG_TEMPLATE} does not exist")
+    return missing
+
+
+def warn_about_changelog(root: Path) -> None:
+    missing = missing_changelog_setup(root)
+    if not missing:
+        return
+    print("\nWarning: this project does not keep its changelog yet, so nothing records what is merged and released:")
+    for item in missing:
+        print(f"  ! {item}")
+    print("Run /pks-setup (Claude Code) or $pks-setup (Codex). It asks only about what is missing.")
+
+
 def cmd_update(args: argparse.Namespace) -> int:
     root = project_root(args.path)
     version_path = root / VERSION_FILE
@@ -464,11 +497,13 @@ def cmd_update(args: argparse.Namespace) -> int:
     warn_about_repeated_rules(root)
     if plan.is_empty():
         print(f"PKS {current} is up to date in {root}.")
+        warn_about_changelog(root)
         return 0
     print(f"PKS {installed} -> {current} in {root}")
     plan.show()
     if args.dry_run:
         print("Dry run: nothing changed.")
+        warn_about_changelog(root)
         return 0
     confirm(args.yes)
 
@@ -495,6 +530,7 @@ def cmd_update(args: argparse.Namespace) -> int:
         print(f"\nWhat changed:\n\n{changes}\n")
     if DOCS_STRUCTURE_TAG in changes:
         print("This version changes the `docs/` structure: run /pks-setup (Claude Code) or $pks-setup (Codex).")
+    warn_about_changelog(root)
     return 0
 
 

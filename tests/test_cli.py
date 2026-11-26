@@ -258,8 +258,74 @@ class UpdateTest(PksTestCase):
         result = self.pks("update", "--yes")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Keep the changelog", (self.root / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertIn("whichever skill, script or instruction does it", (self.root / "AGENTS.md").read_text(encoding="utf-8"))
         docs_after = {name: data for name, data in self.snapshot().items() if name.startswith("docs/")}
         self.assertEqual(docs_after, docs_before)
+
+    def test_missing_releases_and_changelog_are_reported_every_time(self) -> None:
+        self.install_and_commit()
+        (self.root / "docs/changelog.md").unlink()
+        self.write("docs/PROJECT.md", "# Projekt\n\n## Současný stav\n\nPracuje se.\n")
+        self.write(".pks/version", "1.7.0\n")
+        docs_before = {name: data for name, data in self.snapshot().items() if name.startswith("docs/")}
+        for _ in range(2):
+            result = self.pks("update", "--yes")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("does not keep its changelog yet", result.stdout)
+            self.assertIn('! docs/PROJECT.md has no "Releases" section', result.stdout)
+            self.assertIn("! docs/changelog.md does not exist", result.stdout)
+            self.assertIn("pks-setup", result.stdout)
+        self.assertIn("up to date", result.stdout)
+        docs_after = {name: data for name, data in self.snapshot().items() if name.startswith("docs/")}
+        self.assertEqual(docs_after, docs_before)
+
+    def test_missing_releases_is_reported_when_the_changelog_exists(self) -> None:
+        self.install_and_commit()
+        self.write("docs/PROJECT.md", "# Project\n")
+        before = self.snapshot()
+        result = self.pks("update", "--dry-run")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('! docs/PROJECT.md has no "Releases" section', result.stdout)
+        self.assertNotIn("does not exist", result.stdout)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_releases_without_a_changelog_file_gets_no_warning(self) -> None:
+        self.install_and_commit()
+        (self.root / "docs/changelog.md").unlink()
+        self.write("docs/PROJECT.md", "# Projekt\n\n## Vydání\n\n- **Vydání:** Netýká se\n- **Changelog:** `docs/changelog.md`\n")
+        result = self.pks("update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("Warning", result.stdout)
+
+    def test_changelog_in_the_root_counts_as_the_changelog(self) -> None:
+        self.install_and_commit()
+        (self.root / "docs/changelog.md").unlink()
+        self.write("CHANGELOG.md", "# Changelog\n")
+        self.write("docs/PROJECT.md", "# Project\n")
+        result = self.pks("update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('! docs/PROJECT.md has no "Releases" section', result.stdout)
+        self.assertNotIn("does not exist", result.stdout)
+
+    def test_project_file_in_another_encoding_does_not_break_the_update(self) -> None:
+        self.install_and_commit()
+        (self.root / "docs/PROJECT.md").write_bytes("# Projekt\n\nŽluťoučký kůň\n".encode("cp1250"))
+        result = self.pks("update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('no "Releases" section', result.stdout)
+
+    def test_releases_in_another_language_gets_no_warning(self) -> None:
+        self.install_and_commit()
+        self.write("docs/PROJECT.md", "# Projekt\n\n## Vydání\n\n- **Changelog:** `docs/changelog.md`\n")
+        result = self.pks("update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("Warning", result.stdout)
+
+    def test_fresh_installation_gets_no_changelog_warning(self) -> None:
+        self.install_and_commit()
+        result = self.pks("update", "--yes")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("Warning", result.stdout)
 
     def test_skills_are_replaced_without_a_commit(self) -> None:
         run_git(self.root, "init")
